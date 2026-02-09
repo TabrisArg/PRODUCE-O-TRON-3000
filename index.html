@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,6 +33,11 @@
       font-family: 'VT323', monospace;
     }
   </style>
+  <script>
+    // Polyfill for 'process' to prevent crashes on static hosts like GitHub Pages
+    // where environment variables aren't injected at runtime.
+    window.process = { env: { API_KEY: "" } };
+  </script>
 <script type="importmap">
 {
   "imports": {

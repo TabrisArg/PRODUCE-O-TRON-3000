@@ -1,11 +1,8 @@
-
 import React, { useState } from 'react';
 import { ToolType } from './types.ts';
 import { TOOLS } from './constants.tsx';
 import RetroButton from './components/RetroButton.tsx';
 import ToolFileList from './components/ToolFileList.tsx';
-import ToolDrafter from './components/ToolDrafter.tsx';
-import ToolQuickNotes from './components/ToolQuickNotes.tsx';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.HOME);
@@ -14,10 +11,6 @@ const App: React.FC = () => {
     switch (activeTool) {
       case ToolType.FILE_LIST:
         return <ToolFileList />;
-      case ToolType.DRAFTER:
-        return <ToolDrafter />;
-      case ToolType.NOTES:
-        return <ToolQuickNotes />;
       case ToolType.HOME:
         return (
           <div className="flex flex-col items-center justify-center h-full p-2 md:p-4">
@@ -26,6 +19,7 @@ const App: React.FC = () => {
             </h2>
             
             <div className="flex-grow w-full flex items-center justify-center retro-inset bg-white p-4 shadow-inner border-2 border-gray-400 overflow-hidden relative group">
+              {/* Retro Computer Illustration (Base64) - Maximized */}
               <img 
                 src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkAQMAAABKLAcXAAAABlBMVEUAAAD///+l2Z/dAAABUElEQVQ4y2P4DwYHshgYmBlQAUjA4v8fIAnC8P8fIMHw/x8gCcL//wEJhv8mEALC/x8YEML/G5AAIfz/AQmG/z8gAUL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AxIM/39AAkL4/wMSDP9/QAJC+P8DEgz/f0ACQvj/AwAAGW/qD3fHAAA=" 
                 alt="Retro Computer"

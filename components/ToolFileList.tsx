@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from 'react';
-import RetroButton from './RetroButton';
+import RetroButton from './RetroButton.tsx';
 import { Document, Packer, Paragraph, Run, HeadingLevel } from 'docx';
 
 interface ScanItem {
