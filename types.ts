@@ -1,5 +1,7 @@
 export enum ToolType {
   FILE_LIST = 'FILE_LIST',
+  DRAFTER = 'DRAFTER',
+  NOTES = 'NOTES',
   HOME = 'HOME'
 }
 
