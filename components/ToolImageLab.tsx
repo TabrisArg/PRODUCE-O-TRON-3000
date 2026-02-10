@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { GoogleGenAI } from "@google/genai";
@@ -13,7 +14,8 @@ const ToolImageLab: React.FC = () => {
     setLoading(true);
     setImageUrl(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+      // Correctly initialize with a named parameter using process.env.API_KEY directly.
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: { 

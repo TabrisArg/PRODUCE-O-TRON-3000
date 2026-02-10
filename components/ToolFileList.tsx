@@ -112,9 +112,9 @@ const ToolFileList: React.FC = () => {
               children: [
                 new Run({
                   text: `Folder Scan Report - ${dateStr}`,
-                  color: "365F91",
+                  color: "000000",
                   font: "Calibri",
-                  size: 28, // 14pt (Word uses half-points)
+                  size: 28, 
                 })
               ],
             }),
@@ -126,7 +126,7 @@ const ToolFileList: React.FC = () => {
                 new Run({
                   text: item.name,
                   font: "Cambria",
-                  size: 22, // 11pt (Word uses half-points)
+                  size: 22,
                 })
               ],
             }))
@@ -150,16 +150,17 @@ const ToolFileList: React.FC = () => {
   };
 
   return (
-    <div className="p-4 space-y-4 font-serif">
-      <h2 className="text-2xl font-bold border-b-2 border-black mb-4 flex items-center gap-2">
+    <div className="p-4 space-y-4 font-serif text-black">
+      <h2 className="text-2xl font-bold border-b-2 border-black mb-4 flex items-center gap-2 text-black">
         📂 Files to Documents List
       </h2>
 
-      <div className="retro-inset bg-blue-50 p-3 mb-4 text-xs border-l-4 border-blue-800">
-        <p className="font-bold text-blue-900 mb-1">🛡️ LOCAL PRIVACY SECURED</p>
-        <p className="text-blue-800">
-          Note: Although your browser may say "upload," your files <strong>never leave your computer</strong>. 
-          This tool only reads the file names and paths locally to generate the report. 
+      {/* High Contrast Privacy Box - Sharp Black/White Contrast */}
+      <div className="retro-inset bg-white p-4 mb-4 text-xs border-l-8 border-black shadow-sm">
+        <p className="font-black text-black mb-1 uppercase tracking-tighter text-sm">🛡️ LOCAL PRIVACY PROTOCOL ACTIVE</p>
+        <p className="text-black font-medium leading-relaxed">
+          SECURITY ALERT: Although your browser uses the term "upload," your source files <strong>NEVER LEAVE YOUR LOCAL MACHINE</strong>. 
+          The Produce-o-tron 3000 logic executes purely within your workstation's memory to generate this metadata inventory. 
         </p>
       </div>
 
@@ -171,41 +172,41 @@ const ToolFileList: React.FC = () => {
         {...{ webkitdirectory: "", directory: "" } as any}
       />
 
-      <div className="win95-bg p-4 retro-inset space-y-4">
-        <div className="flex flex-col gap-3">
-          <label className="flex items-center gap-2 cursor-pointer font-bold text-sm">
+      <div className="win95-bg p-6 retro-inset space-y-4 border-2 border-gray-400">
+        <div className="flex flex-col gap-4">
+          <label className="flex items-center gap-3 cursor-pointer font-black text-sm text-black group">
             <input 
               type="checkbox" 
               checked={fullFileNames} 
               onChange={(e) => setFullFileNames(e.target.checked)}
-              className="w-4 h-4"
+              className="w-5 h-5 accent-black border-2 border-black"
             />
-            <span>Full File Names?</span>
+            <span className="group-hover:underline uppercase tracking-tight">Full File Names (No Cleanup)</span>
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer font-bold text-sm">
+          <label className="flex items-center gap-3 cursor-pointer font-black text-sm text-black group">
             <input 
               type="checkbox" 
               checked={keepUnderscores} 
               onChange={(e) => setKeepUnderscores(e.target.checked)}
-              className="w-4 h-4"
+              className="w-5 h-5 accent-black border-2 border-black"
             />
-            <span>Keep Underscores (_)?</span>
+            <span className="group-hover:underline uppercase tracking-tight">Preserve Underscores (_)</span>
           </label>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
-          <RetroButton onClick={triggerPicker} active={loading}>
-            {loading ? 'Processing...' : '🚀 Select Directory to Scan'}
+        <div className="flex gap-2 flex-wrap pt-2">
+          <RetroButton onClick={triggerPicker} active={loading} className="text-black font-black bg-white hover:bg-gray-100">
+            {loading ? 'ANALYZING DISK...' : '🚀 SCAN LOCAL DIRECTORY'}
           </RetroButton>
           
           {report.length > 0 && (
             <>
-              <RetroButton onClick={copyToClipboard}>
-                📋 Copy List
+              <RetroButton onClick={copyToClipboard} className="text-black font-black">
+                📋 COPY TEXT
               </RetroButton>
-              <RetroButton onClick={exportToWord}>
-                💾 Export .DOCX
+              <RetroButton onClick={exportToWord} className="text-black font-black">
+                💾 EXPORT .DOCX
               </RetroButton>
             </>
           )}
@@ -213,18 +214,19 @@ const ToolFileList: React.FC = () => {
       </div>
 
       {report.length > 0 && (
-        <div className="mt-4 p-4 retro-inset bg-white min-h-[200px] font-mono text-sm overflow-auto max-h-[40vh]">
-          <p className="text-blue-900 font-bold mb-4 border-b border-blue-900 pb-1 uppercase">
-            LOCAL FOLDER SCAN - {new Date().toLocaleString()}
-          </p>
-          <div className="space-y-1">
+        <div className="mt-6 p-6 retro-inset bg-white min-h-[300px] font-mono text-sm overflow-auto max-h-[50vh] border-2 border-black">
+          <div className="text-black font-black mb-6 border-b-4 border-black pb-2 flex justify-between items-end uppercase">
+            <span>Local Inventory Manifest</span>
+            <span className="text-xs font-normal">TIMESTAMP: {new Date().toLocaleString()}</span>
+          </div>
+          <div className="space-y-1.5">
             {report.map((item, idx) => (
               <div 
                 key={idx} 
-                style={{ marginLeft: `${item.level * 20}px` }}
-                className={`${item.isDir ? 'font-bold text-gray-800' : 'text-gray-600'}`}
+                style={{ marginLeft: `${item.level * 24}px` }}
+                className={`${item.isDir ? 'font-black text-black text-base' : 'text-black font-medium'}`}
               >
-                {item.isDir ? `📂 ${item.name}` : `• ${item.name}`}
+                {item.isDir ? `📂 ${item.name.toUpperCase()}` : `• ${item.name}`}
               </div>
             ))}
           </div>
@@ -232,8 +234,8 @@ const ToolFileList: React.FC = () => {
       )}
 
       {report.length === 0 && !loading && (
-        <div className="text-center p-8 opacity-50 italic">
-          No directory selected. Click the button above to start the local scan.
+        <div className="text-center p-12 opacity-40 italic text-black font-bold uppercase tracking-widest">
+          SYSTEM IDLE: PLEASE SELECT A DIRECTORY TO INVENTORY
         </div>
       )}
     </div>

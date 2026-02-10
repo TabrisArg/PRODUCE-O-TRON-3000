@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import RetroButton from './RetroButton.tsx';
+import ExcelJS from 'exceljs';
 
 interface Resource {
   id: string;
@@ -90,7 +91,161 @@ const ToolCostSimulator: React.FC = () => {
     setResources(resources.map(r => r.id === id ? { ...r, monthlyCost: avgCost, isOverride: false } : r));
   };
 
-  // Formatting Helpers
+  // Calculations (Always in Primary)
+  const baseCost = resources.reduce((acc, r) => acc + (r.monthlyCost * months), 0);
+  const profitAmount = baseCost * (margin / 100);
+  const subtotalWithMargin = baseCost + profitAmount;
+  const contingencyAmount = subtotalWithMargin * (contingency || 0) / 100;
+  const grandTotal = subtotalWithMargin + contingencyAmount;
+
+  // Excel Generation Logic with Correct Data Mapping and Formatting
+  const handleGenerateExcel = async () => {
+    const hasSecondary = secondaryCurrency !== 'NONE' && rates[secondaryCurrency];
+    const rate = hasSecondary ? rates[secondaryCurrency] : 1;
+    
+    const pCurr = CURRENCIES.find(c => c.code === primaryCurrency);
+    const sCurr = CURRENCIES.find(c => c.code === secondaryCurrency);
+    
+    const primaryFormat = `"${pCurr?.symbol || ''}"#,##0`;
+    const secondaryFormat = `"${sCurr?.symbol || ''}"#,##0`;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Budget Estimate');
+
+    // Define column headers and widths
+    const cols = [
+      { header: 'ITEM', key: 'item', width: 40 },
+      { header: `VAL (${primaryCurrency})`, key: 'valPrimary', width: 22 },
+      { header: `TOTAL (${primaryCurrency})`, key: 'totalPrimary', width: 22 },
+    ];
+
+    if (hasSecondary) {
+      cols.push({ header: `VAL (${secondaryCurrency})`, key: 'valSecondary', width: 22 });
+      cols.push({ header: `TOTAL (${secondaryCurrency})`, key: 'totalSecondary', width: 22 });
+    }
+    worksheet.columns = cols;
+
+    // Main Header Row (Styled)
+    const titleRow = worksheet.insertRow(1, ["FISCAL PROJECTION ENGINE - BUDGET REPORT"]);
+    titleRow.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+    titleRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A237E' } };
+    worksheet.mergeCells(1, 1, 1, hasSecondary ? 5 : 3);
+
+    worksheet.addRow(["Generated via Produce-o-tron 3000", new Date().toLocaleString()]);
+    worksheet.addRow([]);
+
+    // Project Specs
+    const specHeader = worksheet.addRow(["--- PROJECT SPECIFICATIONS ---"]);
+    specHeader.font = { bold: true, color: { argb: 'FF333333' } };
+    worksheet.addRow(["Project Duration", `${months} Months`]);
+    worksheet.addRow(["Primary Currency", primaryCurrency]);
+    if (hasSecondary) {
+      worksheet.addRow(["Secondary Currency", secondaryCurrency]);
+      worksheet.addRow(["Exchange Rate", `1 ${primaryCurrency} = ${rate} ${secondaryCurrency}`]);
+    }
+    worksheet.addRow([]);
+
+    // Personnel Table Header
+    const personnelHeaders = ["RESOURCE IDENTIFIER", `MONTHLY (${primaryCurrency})`, `TOTAL PROJECT (${primaryCurrency})`];
+    if (hasSecondary) {
+      personnelHeaders.push(`MONTHLY (${secondaryCurrency})`, `TOTAL PROJECT (${secondaryCurrency})`);
+    }
+    const tableHeader = worksheet.addRow(personnelHeaders);
+    tableHeader.eachCell(cell => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF424242' } };
+    });
+
+    // Personnel Data Rows (Correctly filling all columns and applying formats)
+    resources.forEach(res => {
+      const primaryMonthly = res.monthlyCost;
+      const primaryTotal = res.monthlyCost * months;
+      const dataRowValues = [res.name.toUpperCase(), primaryMonthly, primaryTotal];
+      
+      if (hasSecondary) {
+        dataRowValues.push(primaryMonthly * rate, primaryTotal * rate);
+      }
+      const newRow = worksheet.addRow(dataRowValues);
+      
+      // Apply number formats to the financial cells
+      newRow.getCell(2).numFmt = primaryFormat;
+      newRow.getCell(3).numFmt = primaryFormat;
+      if (hasSecondary) {
+        newRow.getCell(4).numFmt = secondaryFormat;
+        newRow.getCell(5).numFmt = secondaryFormat;
+      }
+    });
+
+    worksheet.addRow([]);
+    const summaryHeader = worksheet.addRow(["--- FINANCIAL ANALYSIS SUMMARY ---"]);
+    summaryHeader.font = { bold: true };
+
+    // Function to add summary row with optional color coding and currency symbols
+    const addSummaryRow = (label: string, primaryValue: number, color?: string) => {
+      const rowData = [label, primaryValue, primaryValue]; // Label, Val, Total (same for summary)
+
+      if (hasSecondary) {
+        rowData.push(primaryValue * rate, primaryValue * rate);
+      }
+      
+      const row = worksheet.addRow(rowData);
+      
+      // Formatting cells
+      row.getCell(2).numFmt = primaryFormat;
+      row.getCell(3).numFmt = primaryFormat;
+      if (hasSecondary) {
+        row.getCell(4).numFmt = secondaryFormat;
+        row.getCell(5).numFmt = secondaryFormat;
+      }
+
+      if (color) {
+        row.eachCell((cell, colNumber) => {
+          if (colNumber >= 1) { // Apply to all populated columns in the row
+             cell.font = { color: { argb: color }, bold: true };
+          }
+        });
+      }
+      return row;
+    };
+
+    addSummaryRow("BASE OPERATION COST", baseCost);
+    addSummaryRow(`PROFIT MARGIN (${margin}%)`, profitAmount, 'FF0D47A1'); // Blue
+    addSummaryRow("OPERATING SUBTOTAL", subtotalWithMargin);
+    addSummaryRow(`CONTINGENCY BUFFER (${contingency}%)`, contingencyAmount, 'FFB71C1C'); // Red
+    
+    worksheet.addRow([]);
+
+    // Grand Total Row (High Contrast with Symbols)
+    const finalRowData = ["FINAL BUDGET ESTIMATE", grandTotal, grandTotal];
+    if (hasSecondary) {
+      finalRowData.push(grandTotal * rate, grandTotal * rate);
+    }
+    const finalRow = worksheet.addRow(finalRowData);
+    finalRow.eachCell((cell, colNumber) => {
+      cell.font = { bold: true, size: 14 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } }; // Yellow background
+      cell.border = {
+        top: { style: 'double' },
+        bottom: { style: 'double' }
+      };
+      
+      // Apply Currency Formats to Grand Total row as well
+      if (colNumber === 2 || colNumber === 3) cell.numFmt = primaryFormat;
+      if (hasSecondary && (colNumber === 4 || colNumber === 5)) cell.numFmt = secondaryFormat;
+    });
+
+    // Write to buffer and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Produce-o-tron_Budget_${Date.now()}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Formatting Helpers for UI
   const formatValue = (val: number, currencyCode: string) => {
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
@@ -113,18 +268,11 @@ const ToolCostSimulator: React.FC = () => {
     );
   };
 
-  // Calculations (Always in Primary)
-  const baseCost = resources.reduce((acc, r) => acc + (r.monthlyCost * months), 0);
-  const profitAmount = baseCost * (margin / 100);
-  const subtotalWithMargin = baseCost + profitAmount;
-  const contingencyAmount = subtotalWithMargin * (contingency || 0) / 100;
-  const grandTotal = subtotalWithMargin + contingencyAmount;
-
   return (
     <div className="p-4 space-y-6 font-serif text-black">
       <div className="flex justify-between items-start border-b-2 border-black pb-2 mb-4">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          💰 Fiscal Projection Engine v1.2
+          💰 Fiscal Projection Engine v1.6
         </h2>
         <div className="text-[9px] font-mono text-right win95-bg p-1 retro-inset px-2">
           STATUS: {isFetching ? "SYNCHRONIZING..." : "ONLINE"}<br/>
@@ -132,10 +280,9 @@ const ToolCostSimulator: React.FC = () => {
         </div>
       </div>
 
-      {/* Global Controls */}
-      <div className="win95-bg p-4 retro-beveled grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 border-2 border-gray-400">
+      <div className="win95-bg p-4 retro-beveled grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 border-2 border-gray-400 items-end">
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold uppercase">Primary Currency</label>
+          <label className="block text-[10px] font-bold uppercase text-black leading-tight">Primary Currency</label>
           <select 
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black outline-none"
             value={primaryCurrency}
@@ -145,7 +292,7 @@ const ToolCostSimulator: React.FC = () => {
           </select>
         </div>
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold uppercase">Secondary Currency</label>
+          <label className="block text-[10px] font-bold uppercase text-black leading-tight">Secondary Currency</label>
           <select 
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black outline-none"
             value={secondaryCurrency}
@@ -158,7 +305,7 @@ const ToolCostSimulator: React.FC = () => {
           </select>
         </div>
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold uppercase">Duration (Months)</label>
+          <label className="block text-[10px] font-bold uppercase text-black leading-tight">Duration (Months)</label>
           <input 
             type="number"
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black"
@@ -167,7 +314,7 @@ const ToolCostSimulator: React.FC = () => {
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold uppercase">Default Cost / Mo</label>
+          <label className="block text-[10px] font-bold uppercase text-black leading-tight">Default Cost / Mo</label>
           <input 
             type="number"
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black"
@@ -176,7 +323,7 @@ const ToolCostSimulator: React.FC = () => {
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold uppercase">Profit Margin %</label>
+          <label className="block text-[10px] font-bold uppercase text-black leading-tight">Profit Margin %</label>
           <input 
             type="number"
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black"
@@ -185,7 +332,7 @@ const ToolCostSimulator: React.FC = () => {
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-[10px] font-bold uppercase">Contingency %</label>
+          <label className="block text-[10px] font-bold uppercase text-black leading-tight">Contingency %</label>
           <input 
             type="number"
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black"
@@ -196,19 +343,18 @@ const ToolCostSimulator: React.FC = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Resource Ledger */}
         <div className="flex-grow space-y-2">
-          <div className="win95-bg p-1 retro-beveled text-[10px] font-bold px-2 flex justify-between uppercase border-2 border-gray-400">
+          <div className="win95-bg p-1 retro-beveled text-[10px] font-bold px-2 flex justify-between uppercase border-2 border-gray-400 text-black">
             <span>Personnel Registry</span>
             <span>Headcount: {resources.length}</span>
           </div>
           <div className="retro-inset bg-white overflow-hidden overflow-x-auto border-2 border-gray-400">
             <table className="w-full text-sm font-mono border-collapse">
-              <thead className="bg-gray-200 border-b-2 border-gray-500">
-                <tr>
-                  <th className="p-2 text-left border-r border-gray-400">Resource Name</th>
-                  <th className="p-2 text-right border-r border-gray-400">Cost / Mo ({primaryCurrency})</th>
-                  <th className="p-2 text-right w-24">Actions</th>
+              <thead className="bg-gray-200 border-b-2 border-gray-600">
+                <tr className="text-black font-bold">
+                  <th className="p-2 text-left border-r border-gray-400 uppercase text-[10px] tracking-tight">Resource Name</th>
+                  <th className="p-2 text-right border-r border-gray-400 uppercase text-[10px] tracking-tight">Cost / Mo ({primaryCurrency})</th>
+                  <th className="p-2 text-right w-24 uppercase text-[10px] tracking-tight text-black">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,7 +362,7 @@ const ToolCostSimulator: React.FC = () => {
                   <tr key={res.id} className="border-b border-gray-300 hover:bg-blue-50">
                     <td className="p-1 border-r border-gray-400">
                       <input 
-                        className="w-full p-1 bg-transparent border-none focus:outline-none text-black"
+                        className="w-full p-1 bg-transparent border-none focus:outline-none text-black font-bold"
                         value={res.name}
                         onChange={(e) => updateResourceName(res.id, e.target.value)}
                       />
@@ -226,7 +372,7 @@ const ToolCostSimulator: React.FC = () => {
                         {res.isOverride && <span className="text-[9px] text-blue-700 font-bold uppercase">[Override]</span>}
                         <input 
                           type="number"
-                          className={`w-28 text-right p-1 bg-transparent border-none focus:outline-none ${res.isOverride ? 'font-bold' : 'text-gray-500'}`}
+                          className={`w-28 text-right p-1 bg-transparent border-none focus:outline-none ${res.isOverride ? 'font-bold text-black' : 'text-gray-900 font-normal'}`}
                           value={res.monthlyCost}
                           onChange={(e) => updateResourceCost(res.id, parseInt(e.target.value) || 0)}
                         />
@@ -234,7 +380,7 @@ const ToolCostSimulator: React.FC = () => {
                     </td>
                     <td className="p-1 text-center space-x-1">
                       {res.isOverride && (
-                        <button onClick={() => resetOverride(res.id)} className="text-[10px] text-gray-400 hover:text-black">🔄</button>
+                        <button onClick={() => resetOverride(res.id)} className="text-[10px] text-gray-500 hover:text-black">🔄</button>
                       )}
                       <button onClick={() => removeResource(res.id)} className="text-red-700 font-bold hover:bg-red-100 px-2">×</button>
                     </td>
@@ -243,34 +389,32 @@ const ToolCostSimulator: React.FC = () => {
               </tbody>
             </table>
           </div>
-          <RetroButton onClick={addResource} className="mt-2 text-xs">➕ Hire New Resource</RetroButton>
+          <RetroButton onClick={addResource} className="mt-2 text-xs font-bold text-black">➕ Hire New Resource</RetroButton>
         </div>
 
-        {/* Totals Summary */}
         <div className="w-full lg:w-96 shrink-0">
           <div className="win95-bg p-4 retro-beveled space-y-4 border-2 border-gray-400 h-full">
-            <h3 className="text-center font-bold border-b border-gray-600 pb-2 uppercase text-sm">Budget Analysis</h3>
+            <h3 className="text-center font-bold border-b border-gray-600 pb-2 uppercase text-sm text-black">Budget Analysis</h3>
             
-            <div className="space-y-4 font-mono text-sm">
+            <div className="space-y-4 font-mono text-sm text-black">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Base Project Cost:</span>
+                <span className="text-gray-900 font-bold">Base Project Cost:</span>
                 {getDualDisplay(baseCost)}
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Profit Margin ({margin}%):</span>
+                <span className="text-gray-900 font-bold">Profit Margin ({margin}%):</span>
                 <div className="text-blue-900">{getDualDisplay(profitAmount)}</div>
               </div>
               <div className="border-t border-gray-500 pt-2 flex justify-between items-center font-bold">
-                <span className="uppercase text-xs tracking-tighter">Gross Subtotal:</span>
+                <span className="uppercase text-xs tracking-tighter text-black font-black">Gross Subtotal:</span>
                 {getDualDisplay(subtotalWithMargin)}
               </div>
-              <div className="flex justify-between items-center italic">
-                <span className="text-gray-600">Buffer ({contingency}%):</span>
-                <div className="text-red-900">{getDualDisplay(contingencyAmount)}</div>
+              <div className="flex justify-between items-center italic text-red-900">
+                <span className="font-bold">Buffer ({contingency}%):</span>
+                {getDualDisplay(contingencyAmount)}
               </div>
             </div>
 
-            {/* GRAND TOTAL BOX */}
             <div className="mt-6 p-4 border-2 border-black bg-[#ffffa0] text-black text-center shadow-[3px_3px_0px_rgba(0,0,0,1)]">
               <div className="text-[10px] uppercase font-bold tracking-widest mb-1 border-b border-black/20 pb-1 italic">Consolidated Total Estimate</div>
               <div className="py-2">
@@ -278,33 +422,21 @@ const ToolCostSimulator: React.FC = () => {
                   {formatValue(grandTotal, primaryCurrency)}
                 </div>
                 {secondaryCurrency !== 'NONE' && rates[secondaryCurrency] && (
-                  <div className="text-sm font-bold opacity-70 mt-1">
+                  <div className="text-sm font-bold opacity-80 mt-1">
                     [ {formatValue(grandTotal * rates[secondaryCurrency], secondaryCurrency)} ]
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="text-[9px] text-gray-700 text-center leading-tight">
+            <div className="text-[9px] text-gray-800 text-center leading-tight">
               Rates derived from central data API.<br/>
               Last Refreshed: {lastUpdate || "Offline"}
             </div>
 
-            <div className="pt-2 flex flex-col gap-2">
-              <RetroButton className="w-full text-xs" onClick={() => window.print()}>🖨️ Generate Report</RetroButton>
-              <RetroButton 
-                className="w-full text-xs" 
-                onClick={() => {
-                  const data = {
-                    date: new Date().toLocaleDateString(),
-                    primary: formatValue(grandTotal, primaryCurrency),
-                    secondary: secondaryCurrency !== 'NONE' ? formatValue(grandTotal * (rates[secondaryCurrency] || 1), secondaryCurrency) : 'N/A'
-                  };
-                  navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-                  alert("Budget data exported to clipboard.");
-                }}
-              >
-                💾 Export to Database
+            <div className="pt-2">
+              <RetroButton className="w-full text-xs font-bold text-black" onClick={handleGenerateExcel}>
+                💾 Generate Excel Report
               </RetroButton>
             </div>
           </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { GoogleGenAI } from "@google/genai";
@@ -13,7 +14,8 @@ const ToolDrafter: React.FC = () => {
     
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+      // Correctly initialize with a named parameter using process.env.API_KEY directly.
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `You are a high-level corporate secretary in 1995. Draft a ${tone} memo or email based on the following instructions: "${prompt}". Use professional 90s corporate language.`,
