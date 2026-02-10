@@ -14,7 +14,13 @@ const App: React.FC = () => {
       case ToolType.HOME:
         return (
           <div className="flex flex-col items-center justify-center h-full p-2 md:p-4">
-            <h2 className="text-6xl md:text-8xl font-black text-blue-900 mb-4 tracking-tighter uppercase" style={{ fontFamily: 'VT323, monospace' }}>
+            <h2 
+              className="text-4xl md:text-6xl font-bold text-blue-800 mb-6 tracking-tight uppercase" 
+              style={{ 
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                textShadow: '2px 2px 0px #ffffff'
+              }}
+            >
               Welcome
             </h2>
             
