@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ToolType } from './types.ts';
 import { TOOLS } from './constants.tsx';
@@ -11,13 +12,13 @@ const App: React.FC = () => {
     switch (activeTool) {
       case ToolType.HOME:
         return (
-          <div className="flex flex-col items-center justify-center p-8 space-y-12 h-full">
-            <h2 className="text-8xl font-black text-blue-900 italic tracking-tighter text-center select-none">
+          <div className="flex flex-col items-center justify-center p-8 space-y-12 h-full min-h-[500px]">
+            <h2 className="text-8xl font-black text-blue-900 italic tracking-tighter text-center select-none drop-shadow-sm">
               WELCOME
             </h2>
             
             <div className="w-full max-w-3xl aspect-[16/9] retro-inset bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-gray-400 shadow-inner">
-              <div className="text-gray-400 font-serif italic text-lg uppercase tracking-[0.2em] animate-pulse">
+              <div className="text-gray-400 font-serif italic text-lg uppercase tracking-[0.3em] animate-pulse">
                 [ PHOTO_RESERVED ]
               </div>
             </div>
