@@ -6,5 +6,11 @@ export const TOOLS: ToolConfig[] = [
     name: "Files to Docs",
     icon: "📂",
     description: "Organize messy filenames into a clean document inventory."
+  },
+  {
+    id: ToolType.COST_SIMULATOR,
+    name: "Cost Simulator",
+    icon: "💰",
+    description: "Calculate project budgets with custom margins and contingency."
   }
 ];

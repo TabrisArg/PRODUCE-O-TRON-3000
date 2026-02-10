@@ -3,6 +3,7 @@ import { ToolType } from './types.ts';
 import { TOOLS } from './constants.tsx';
 import RetroButton from './components/RetroButton.tsx';
 import ToolFileList from './components/ToolFileList.tsx';
+import ToolCostSimulator from './components/ToolCostSimulator.tsx';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.HOME);
@@ -16,17 +17,21 @@ const App: React.FC = () => {
               WELCOME
             </h2>
             
-            <div className="w-full max-w-2xl aspect-[16/9] retro-inset bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-gray-400 shadow-inner">
-              <div className="text-gray-400 font-serif italic text-lg uppercase tracking-[0.3em] animate-pulse">
-                [ IMAGE_STORAGE_UNIT ]
-              </div>
+            <div className="w-full max-w-5xl retro-inset bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-gray-400 shadow-inner">
+              <img 
+                src="https://i.ibb.co/rfknG0SS/picture.jpg" 
+                alt="System Visual" 
+                className="w-full h-auto block"
+              />
             </div>
           </div>
         );
       case ToolType.FILE_LIST:
         return <ToolFileList />;
+      case ToolType.COST_SIMULATOR:
+        return <ToolCostSimulator />;
       default:
-        return <ToolFileList />;
+        return <div className="p-8 italic text-gray-500">Select a tool from the sidebar.</div>;
     }
   };
 
@@ -36,16 +41,10 @@ const App: React.FC = () => {
       <header className="w-full">
         <div className="win95-bg retro-beveled p-4 flex items-center justify-center shadow-md border-2 border-gray-300">
           <div className="flex items-center gap-6">
-            <div className="pixelated shrink-0">
-              <span className="text-5xl" role="img" aria-label="Diskette">💾</span>
-            </div>
             <div className="flex flex-col items-center">
               <h1 className="text-6xl font-black text-blue-900 tracking-tighter leading-none">
                 PRODUCE-O-TRON
               </h1>
-              <div className="bg-blue-900 text-white text-xs px-4 py-1 font-bold uppercase tracking-widest mt-2 w-full text-center">
-                SERIES 3000 v1.2 &bull; PROFESSIONAL PRODUCTIVITY SUITE
-              </div>
             </div>
           </div>
         </div>
