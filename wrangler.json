@@ -1,0 +1,7 @@
+
+{
+  // Your configuration here
+  "name": "produce-o-tron 3000",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-02-10"
+}
