@@ -3,6 +3,9 @@ import { ToolType } from './types.ts';
 import { TOOLS } from './constants.tsx';
 import RetroButton from './components/RetroButton.tsx';
 import ToolFileList from './components/ToolFileList.tsx';
+import ToolDrafter from './components/ToolDrafter.tsx';
+import ToolQuickNotes from './components/ToolQuickNotes.tsx';
+import ToolImageLab from './components/ToolImageLab.tsx';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.HOME);
@@ -21,10 +24,20 @@ const App: React.FC = () => {
                 [ IMAGE_STORAGE_UNIT ]
               </div>
             </div>
+            
+            <p className="text-blue-900 font-bold uppercase tracking-widest animate-bounce">
+              Select a module from the menu to begin
+            </p>
           </div>
         );
       case ToolType.FILE_LIST:
         return <ToolFileList />;
+      case ToolType.DRAFTER:
+        return <ToolDrafter />;
+      case ToolType.NOTES:
+        return <ToolQuickNotes />;
+      case ToolType.IMAGE_LAB:
+        return <ToolImageLab />;
       default:
         return <ToolFileList />;
     }
@@ -32,7 +45,7 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col gap-6">
-      {/* Top Header Panel - Full Width */}
+      {/* Top Header Panel */}
       <header className="w-full">
         <div className="win95-bg retro-beveled p-4 flex items-center justify-center shadow-md border-2 border-gray-300">
           <div className="flex items-center gap-6">

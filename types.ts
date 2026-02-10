@@ -1,6 +1,9 @@
 export enum ToolType {
+  HOME = 'HOME',
   FILE_LIST = 'FILE_LIST',
-  HOME = 'HOME'
+  DRAFTER = 'DRAFTER',
+  NOTES = 'NOTES',
+  IMAGE_LAB = 'IMAGE_LAB'
 }
 
 export interface ToolConfig {

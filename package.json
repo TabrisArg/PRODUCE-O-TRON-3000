@@ -1,8 +1,7 @@
 {
   "name": "produce-o-tron-3000",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,14 +9,14 @@
   },
   "dependencies": {
     "@google/genai": "^1.39.0",
-    "react-dom": "^19.2.4",
+    "docx": "^9.1.0",
     "react": "^19.2.4",
-    "docx": "^9.1.0"
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11"
   }
 }
