@@ -10,6 +10,8 @@
     body {
       background-color: #008080; /* Classic Windows Teal */
       font-family: 'Times New Roman', Times, serif;
+      margin: 0;
+      padding: 0;
     }
     .retro-beveled {
       border-top: 2px solid #ffffff;
@@ -29,30 +31,23 @@
     .pixelated {
       image-rendering: pixelated;
     }
-    marquee {
-      font-family: 'VT323', monospace;
-    }
   </style>
-  <script>
-    // Polyfill for 'process' to prevent crashes on static hosts like GitHub Pages
-    // where environment variables aren't injected at runtime.
-    window.process = { env: { API_KEY: "" } };
-  </script>
 <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
+    "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "docx": "https://esm.sh/docx@^9.1.0"
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "docx": "https://esm.sh/docx@^9.5.1",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
   }
 }
 </script>
 </head>
 <body class="p-4 md:p-8">
   <div id="root"></div>
-  <!-- Explicitly load the entry point for standard web servers -->
   <script type="module" src="./index.tsx"></script>
 </body>
 </html>

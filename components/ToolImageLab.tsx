@@ -13,11 +13,11 @@ const ToolImageLab: React.FC = () => {
     setLoading(true);
     setImageUrl(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: { 
-          parts: [{ text: `Create a professional 90s style digital illustration of: ${prompt}. Low fidelity, slightly pixelated, corporate colors.` }] 
+          parts: [{ text: `Create a professional 90s style digital illustration of: ${prompt}. Low fidelity, corporate aesthetic.` }] 
         },
         config: {
           imageConfig: {
@@ -32,7 +32,7 @@ const ToolImageLab: React.FC = () => {
       if (imagePart && imagePart.inlineData) {
         setImageUrl(`data:image/png;base64,${imagePart.inlineData.data}`);
       } else {
-        alert("The visualizer failed to render. Please try a different prompt.");
+        alert("The visualizer failed. Try a different description.");
       }
     } catch (error) {
       console.error("Imaging error:", error);
@@ -61,7 +61,7 @@ const ToolImageLab: React.FC = () => {
           <label className="block text-xs font-bold uppercase tracking-tight">Image Specification</label>
           <input 
             className="w-full p-2 retro-inset font-mono text-sm bg-white focus:outline-none"
-            placeholder="e.g. A futuristic office with giant floppy disks..."
+            placeholder="e.g. A futuristic office..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
@@ -76,7 +76,7 @@ const ToolImageLab: React.FC = () => {
       </div>
 
       <div className="flex flex-col items-center">
-        <div className="w-full max-w-md aspect-square retro-inset bg-gray-300 flex items-center justify-center overflow-hidden relative group border-4 border-gray-400">
+        <div className="w-full max-w-md aspect-square retro-inset bg-gray-300 flex items-center justify-center overflow-hidden relative border-4 border-gray-400">
           {imageUrl ? (
             <img 
               src={imageUrl} 
@@ -85,32 +85,18 @@ const ToolImageLab: React.FC = () => {
             />
           ) : (
             <div className="text-center p-8 text-gray-500 italic opacity-60">
-              {loading ? "Processing bitmap data..." : "Waiting for image prompt..."}
-            </div>
-          )}
-          
-          {loading && (
-            <div className="absolute inset-0 bg-white/20 flex items-center justify-center">
-               <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent animate-spin rounded-full"></div>
+              {loading ? "Processing bitmap data..." : "Waiting for prompt..."}
             </div>
           )}
         </div>
 
         {imageUrl && (
           <div className="mt-4 flex gap-2">
-            <RetroButton onClick={handleDownload}>
-              💾 Save to Disk
-            </RetroButton>
-            <RetroButton onClick={() => setImageUrl(null)} className="text-red-700">
-              🗑️ Discard
-            </RetroButton>
+            <RetroButton onClick={handleDownload}>💾 Save</RetroButton>
+            <RetroButton onClick={() => setImageUrl(null)} className="text-red-700">🗑️ Discard</RetroButton>
           </div>
         )}
       </div>
-      
-      <p className="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">
-        High Resolution Imaging Module v1.0
-      </p>
     </div>
   );
 };

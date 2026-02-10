@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { GoogleGenAI } from "@google/genai";
@@ -14,7 +13,7 @@ const ToolDrafter: React.FC = () => {
     
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `You are a high-level corporate secretary in 1995. Draft a ${tone} memo or email based on the following instructions: "${prompt}". Use professional 90s corporate language.`,
@@ -23,7 +22,7 @@ const ToolDrafter: React.FC = () => {
       setDraft(response.text || "The typewriter jammed. Please try again.");
     } catch (error) {
       console.error("Drafting error:", error);
-      setDraft("SYSTEM ERROR: Failed to interface with the Drafting Engine.");
+      setDraft("SYSTEM ERROR: Failed to interface with the Drafting Engine. Ensure API connectivity.");
     } finally {
       setLoading(false);
     }
@@ -47,7 +46,7 @@ const ToolDrafter: React.FC = () => {
           <label className="block text-xs font-bold uppercase tracking-tight">Instruction / Topic</label>
           <textarea 
             className="w-full p-2 retro-inset font-mono text-sm h-24 bg-white focus:outline-none"
-            placeholder="Example: Write a polite email to my boss asking for a raise, or a memo about the new water cooler policy."
+            placeholder="Example: Write a polite email to my boss asking for a raise..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
@@ -65,7 +64,6 @@ const ToolDrafter: React.FC = () => {
               <option>Casual</option>
               <option>Urgent</option>
               <option>Persuasive</option>
-              <option>Apologetic</option>
             </select>
           </div>
           <div className="pt-5">
@@ -96,12 +94,6 @@ const ToolDrafter: React.FC = () => {
               📄 Send to Notes
             </RetroButton>
           </div>
-        </div>
-      )}
-
-      {!draft && !loading && (
-        <div className="p-12 border-2 border-dashed border-gray-400 text-center opacity-40 italic">
-          Drafting engine on standby. Please enter instructions above.
         </div>
       )}
     </div>
