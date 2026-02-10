@@ -3,6 +3,9 @@ import { ToolType } from './types.ts';
 import { TOOLS } from './constants.tsx';
 import RetroButton from './components/RetroButton.tsx';
 import ToolFileList from './components/ToolFileList.tsx';
+import ToolDrafter from './components/ToolDrafter.tsx';
+import ToolQuickNotes from './components/ToolQuickNotes.tsx';
+import ToolImageLab from './components/ToolImageLab.tsx';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.HOME);
@@ -25,6 +28,12 @@ const App: React.FC = () => {
         );
       case ToolType.FILE_LIST:
         return <ToolFileList />;
+      case ToolType.DRAFTER:
+        return <ToolDrafter />;
+      case ToolType.NOTES:
+        return <ToolQuickNotes />;
+      case ToolType.IMAGE_LAB:
+        return <ToolImageLab />;
       default:
         return <ToolFileList />;
     }
