@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { Document, Packer, Paragraph, Run, HeadingLevel } from 'docx';
+import { processFileListAI } from '../services/gemini.ts';
 
 interface ScanItem {
   name: string;
@@ -12,6 +13,8 @@ interface ScanItem {
 const ToolFileList: React.FC = () => {
   const [report, setReport] = useState<ScanItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<string | null>(null);
   const [fullFileNames, setFullFileNames] = useState(false);
   const [keepUnderscores, setKeepUnderscores] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +44,7 @@ const ToolFileList: React.FC = () => {
     if (!files || files.length === 0) return;
 
     setLoading(true);
+    setAiResult(null);
     const items: ScanItem[] = [];
     const seenDirs = new Set<string>();
 
@@ -82,6 +86,15 @@ const ToolFileList: React.FC = () => {
     setLoading(false);
     
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleAIProcess = async () => {
+    if (report.length === 0) return;
+    setAiLoading(true);
+    const textList = report.map(item => "  ".repeat(item.level) + (item.isDir ? `[${item.name}]` : `• ${item.name}`)).join("\n");
+    const result = await processFileListAI(textList);
+    setAiResult(result);
+    setAiLoading(false);
   };
 
   const triggerPicker = () => {
@@ -201,21 +214,36 @@ const ToolFileList: React.FC = () => {
           
           {report.length > 0 && (
             <>
+              <RetroButton onClick={handleAIProcess} active={aiLoading}>
+                {aiLoading ? '🤖 Analyzing...' : '🤖 AI Organize & Inventory'}
+              </RetroButton>
               <RetroButton onClick={copyToClipboard}>
-                📋 Copy to Clipboard
+                📋 Copy List
               </RetroButton>
               <RetroButton onClick={exportToWord}>
-                💾 Export to .DOCX
+                💾 Export .DOCX
               </RetroButton>
             </>
           )}
         </div>
       </div>
 
+      {aiResult && (
+        <div className="mt-4 space-y-2">
+          <div className="win95-bg p-1 retro-beveled text-[10px] font-bold px-2 flex justify-between">
+            <span>AI ARCHIVIST OUTPUT - INVENTORY_ANALYSIS.LOG</span>
+            <span>PROCESSED VIA GEMINI-3</span>
+          </div>
+          <div className="retro-inset p-4 bg-white font-mono text-xs whitespace-pre-wrap border-2 border-blue-900 shadow-inner max-h-[40vh] overflow-auto">
+            {aiResult}
+          </div>
+        </div>
+      )}
+
       {report.length > 0 && (
-        <div className="mt-4 p-4 retro-inset bg-white min-h-[300px] font-mono text-sm overflow-auto max-h-[60vh]">
+        <div className="mt-4 p-4 retro-inset bg-white min-h-[200px] font-mono text-sm overflow-auto max-h-[40vh]">
           <p className="text-blue-900 font-bold mb-4 border-b border-blue-900 pb-1 uppercase">
-            FOLDER SCAN REPORT - {new Date().toLocaleString()}
+            LOCAL FOLDER SCAN - {new Date().toLocaleString()}
           </p>
           <div className="space-y-1">
             {report.map((item, idx) => (
