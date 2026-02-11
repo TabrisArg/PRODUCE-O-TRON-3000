@@ -11,6 +11,12 @@ export const TOOLS: ToolConfig[] = [
     id: ToolType.COST_SIMULATOR,
     name: "Cost Simulator",
     icon: "💰",
-    description: "Calculate project budgets with custom margins and contingency."
+    description: "Simple tool for monthly resource cost simulation."
+  },
+  {
+    id: ToolType.PROJECT_ARCHITECT,
+    name: "Project Architect",
+    icon: "📅",
+    description: "Simulate costs, import backlogs, and forecast resource timelines."
   }
 ];

@@ -4,6 +4,7 @@ import { TOOLS } from './constants.tsx';
 import RetroButton from './components/RetroButton.tsx';
 import ToolFileList from './components/ToolFileList.tsx';
 import ToolCostSimulator from './components/ToolCostSimulator.tsx';
+import ToolProjectArchitect from './components/ToolProjectArchitect.tsx';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.HOME);
@@ -30,6 +31,8 @@ const App: React.FC = () => {
         return <ToolFileList />;
       case ToolType.COST_SIMULATOR:
         return <ToolCostSimulator />;
+      case ToolType.PROJECT_ARCHITECT:
+        return <ToolProjectArchitect />;
       default:
         return <div className="p-8 italic text-gray-500">Select a tool from the sidebar.</div>;
     }

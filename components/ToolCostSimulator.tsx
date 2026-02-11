@@ -98,7 +98,7 @@ const ToolCostSimulator: React.FC = () => {
   const contingencyAmount = subtotalWithMargin * (contingency || 0) / 100;
   const grandTotal = subtotalWithMargin + contingencyAmount;
 
-  // Excel Generation Logic with Correct Data Mapping and Formatting
+  // Excel Generation Logic
   const handleGenerateExcel = async () => {
     const hasSecondary = secondaryCurrency !== 'NONE' && rates[secondaryCurrency];
     const rate = hasSecondary ? rates[secondaryCurrency] : 1;
@@ -112,7 +112,6 @@ const ToolCostSimulator: React.FC = () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Budget Estimate');
 
-    // Define column headers and widths
     const cols = [
       { header: 'ITEM', key: 'item', width: 40 },
       { header: `VAL (${primaryCurrency})`, key: 'valPrimary', width: 22 },
@@ -125,7 +124,6 @@ const ToolCostSimulator: React.FC = () => {
     }
     worksheet.columns = cols;
 
-    // Main Header Row (Styled)
     const titleRow = worksheet.insertRow(1, ["FISCAL PROJECTION ENGINE - BUDGET REPORT"]);
     titleRow.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
     titleRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A237E' } };
@@ -134,29 +132,6 @@ const ToolCostSimulator: React.FC = () => {
     worksheet.addRow(["Generated via Produce-o-tron 3000", new Date().toLocaleString()]);
     worksheet.addRow([]);
 
-    // Project Specs
-    const specHeader = worksheet.addRow(["--- PROJECT SPECIFICATIONS ---"]);
-    specHeader.font = { bold: true, color: { argb: 'FF333333' } };
-    worksheet.addRow(["Project Duration", `${months} Months`]);
-    worksheet.addRow(["Primary Currency", primaryCurrency]);
-    if (hasSecondary) {
-      worksheet.addRow(["Secondary Currency", secondaryCurrency]);
-      worksheet.addRow(["Exchange Rate", `1 ${primaryCurrency} = ${rate} ${secondaryCurrency}`]);
-    }
-    worksheet.addRow([]);
-
-    // Personnel Table Header
-    const personnelHeaders = ["RESOURCE IDENTIFIER", `MONTHLY (${primaryCurrency})`, `TOTAL PROJECT (${primaryCurrency})`];
-    if (hasSecondary) {
-      personnelHeaders.push(`MONTHLY (${secondaryCurrency})`, `TOTAL PROJECT (${secondaryCurrency})`);
-    }
-    const tableHeader = worksheet.addRow(personnelHeaders);
-    tableHeader.eachCell(cell => {
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF424242' } };
-    });
-
-    // Personnel Data Rows (Correctly filling all columns and applying formats)
     resources.forEach(res => {
       const primaryMonthly = res.monthlyCost;
       const primaryTotal = res.monthlyCost * months;
@@ -167,7 +142,6 @@ const ToolCostSimulator: React.FC = () => {
       }
       const newRow = worksheet.addRow(dataRowValues);
       
-      // Apply number formats to the financial cells
       newRow.getCell(2).numFmt = primaryFormat;
       newRow.getCell(3).numFmt = primaryFormat;
       if (hasSecondary) {
@@ -176,31 +150,21 @@ const ToolCostSimulator: React.FC = () => {
       }
     });
 
-    worksheet.addRow([]);
-    const summaryHeader = worksheet.addRow(["--- FINANCIAL ANALYSIS SUMMARY ---"]);
-    summaryHeader.font = { bold: true };
-
-    // Function to add summary row with optional color coding and currency symbols
     const addSummaryRow = (label: string, primaryValue: number, color?: string) => {
-      const rowData = [label, primaryValue, primaryValue]; // Label, Val, Total (same for summary)
-
+      const rowData = [label, primaryValue, primaryValue];
       if (hasSecondary) {
         rowData.push(primaryValue * rate, primaryValue * rate);
       }
-      
       const row = worksheet.addRow(rowData);
-      
-      // Formatting cells
       row.getCell(2).numFmt = primaryFormat;
       row.getCell(3).numFmt = primaryFormat;
       if (hasSecondary) {
         row.getCell(4).numFmt = secondaryFormat;
         row.getCell(5).numFmt = secondaryFormat;
       }
-
       if (color) {
         row.eachCell((cell, colNumber) => {
-          if (colNumber >= 1) { // Apply to all populated columns in the row
+          if (colNumber >= 1) {
              cell.font = { color: { argb: color }, bold: true };
           }
         });
@@ -208,14 +172,13 @@ const ToolCostSimulator: React.FC = () => {
       return row;
     };
 
+    worksheet.addRow([]);
     addSummaryRow("BASE OPERATION COST", baseCost);
-    addSummaryRow(`PROFIT MARGIN (${margin}%)`, profitAmount, 'FF0D47A1'); // Blue
+    addSummaryRow(`PROFIT MARGIN (${margin}%)`, profitAmount, 'FF0D47A1');
     addSummaryRow("OPERATING SUBTOTAL", subtotalWithMargin);
-    addSummaryRow(`CONTINGENCY BUFFER (${contingency}%)`, contingencyAmount, 'FFB71C1C'); // Red
+    addSummaryRow(`CONTINGENCY BUFFER (${contingency}%)`, contingencyAmount, 'FFB71C1C');
     
     worksheet.addRow([]);
-
-    // Grand Total Row (High Contrast with Symbols)
     const finalRowData = ["FINAL BUDGET ESTIMATE", grandTotal, grandTotal];
     if (hasSecondary) {
       finalRowData.push(grandTotal * rate, grandTotal * rate);
@@ -223,29 +186,20 @@ const ToolCostSimulator: React.FC = () => {
     const finalRow = worksheet.addRow(finalRowData);
     finalRow.eachCell((cell, colNumber) => {
       cell.font = { bold: true, size: 14 };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } }; // Yellow background
-      cell.border = {
-        top: { style: 'double' },
-        bottom: { style: 'double' }
-      };
-      
-      // Apply Currency Formats to Grand Total row as well
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
       if (colNumber === 2 || colNumber === 3) cell.numFmt = primaryFormat;
       if (hasSecondary && (colNumber === 4 || colNumber === 5)) cell.numFmt = secondaryFormat;
     });
 
-    // Write to buffer and download
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Produce-o-tron_Budget_${Date.now()}.xlsx`;
+    a.download = `Cost_Simulation_${Date.now()}.xlsx`;
     a.click();
-    URL.revokeObjectURL(url);
   };
 
-  // Formatting Helpers for UI
   const formatValue = (val: number, currencyCode: string) => {
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
@@ -272,7 +226,7 @@ const ToolCostSimulator: React.FC = () => {
     <div className="p-4 space-y-6 font-serif text-black">
       <div className="flex justify-between items-start border-b-2 border-black pb-2 mb-4">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          💰 Fiscal Projection Engine v1.6
+          💰 Cost Simulator v1.6
         </h2>
         <div className="text-[9px] font-mono text-right win95-bg p-1 retro-inset px-2">
           STATUS: {isFetching ? "SYNCHRONIZING..." : "ONLINE"}<br/>
@@ -389,7 +343,7 @@ const ToolCostSimulator: React.FC = () => {
               </tbody>
             </table>
           </div>
-          <RetroButton onClick={addResource} className="mt-2 text-xs font-bold text-black">➕ Hire New Resource</RetroButton>
+          <RetroButton onClick={addResource} className="mt-2 text-xs font-bold text-black">➕ Add Resource</RetroButton>
         </div>
 
         <div className="w-full lg:w-96 shrink-0">
@@ -421,17 +375,7 @@ const ToolCostSimulator: React.FC = () => {
                 <div className="text-3xl font-black tracking-tighter leading-none">
                   {formatValue(grandTotal, primaryCurrency)}
                 </div>
-                {secondaryCurrency !== 'NONE' && rates[secondaryCurrency] && (
-                  <div className="text-sm font-bold opacity-80 mt-1">
-                    [ {formatValue(grandTotal * rates[secondaryCurrency], secondaryCurrency)} ]
-                  </div>
-                )}
               </div>
-            </div>
-
-            <div className="text-[9px] text-gray-800 text-center leading-tight">
-              Rates derived from central data API.<br/>
-              Last Refreshed: {lastUpdate || "Offline"}
             </div>
 
             <div className="pt-2">
