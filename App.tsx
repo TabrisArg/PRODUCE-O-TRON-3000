@@ -20,7 +20,7 @@ const App: React.FC = () => {
             
             <div className="w-full max-w-5xl retro-inset bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-gray-400 shadow-inner">
               <img 
-                src="https://i.ibb.co/rfknG0SS/picture.jpg" 
+                src="https://i.ibb.co/TBxrr7WC/picture.jpg" 
                 alt="System Visual" 
                 className="w-full h-auto block"
               />
@@ -44,11 +44,25 @@ const App: React.FC = () => {
       <header className="w-full">
         <div className="win95-bg retro-beveled p-4 flex items-center justify-center shadow-md border-2 border-gray-300">
           <div className="flex items-center gap-6">
+            {/* Left GIF */}
+            <img 
+              src="https://i.ibb.co/xKF8SJwF/left-gif.gif" 
+              alt="" 
+              className="h-20 w-auto pixelated" 
+            />
+            
             <div className="flex flex-col items-center">
               <h1 className="text-6xl font-black text-blue-900 tracking-tighter leading-none">
                 PRODUCE-O-TRON
               </h1>
             </div>
+
+            {/* Right GIF (Mirrored) */}
+            <img 
+              src="https://i.ibb.co/cXbnZTVJ/mummy.gif" 
+              alt="" 
+              className="h-20 w-auto pixelated -scale-x-100" 
+            />
           </div>
         </div>
       </header>
