@@ -14,6 +14,7 @@ const ToolFileList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [fullFileNames, setFullFileNames] = useState(false);
   const [keepUnderscores, setKeepUnderscores] = useState(false);
+  const [ignoreDocuments, setIgnoreDocuments] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const REMOVE_LIST = [
@@ -50,6 +51,11 @@ const ToolFileList: React.FC = () => {
       const fullPath = file.webkitRelativePath || '';
       const parts = fullPath.split('/');
       
+      // Ignore 'documents' folder if enabled
+      if (ignoreDocuments && parts.some((part: string) => part === 'documents')) {
+        return;
+      }
+
       let currentPath = "";
       for (let i = 0; i < parts.length - 1; i++) {
         const dirName = parts[i];
@@ -192,6 +198,16 @@ const ToolFileList: React.FC = () => {
               className="w-5 h-5 accent-black border-2 border-black"
             />
             <span className="group-hover:underline uppercase tracking-tight">Preserve Underscores (_)</span>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer font-black text-sm text-black group">
+            <input 
+              type="checkbox" 
+              checked={ignoreDocuments} 
+              onChange={(e) => setIgnoreDocuments(e.target.checked)}
+              className="w-5 h-5 accent-black border-2 border-black"
+            />
+            <span className="group-hover:underline uppercase tracking-tight">Ignore "documents" folder</span>
           </label>
         </div>
 
