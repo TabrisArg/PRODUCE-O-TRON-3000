@@ -5,6 +5,7 @@ import RetroButton from './components/RetroButton.tsx';
 import ToolFileList from './components/ToolFileList.tsx';
 import ToolCostSimulator from './components/ToolCostSimulator.tsx';
 import ToolProjectArchitect from './components/ToolProjectArchitect.tsx';
+import { ICONS } from './src/icons.ts';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.HOME);
@@ -77,7 +78,7 @@ const App: React.FC = () => {
               onClick={() => setActiveTool(ToolType.HOME)}
               className="w-full justify-start text-xs font-bold uppercase py-2"
             >
-              <span className="text-xl">🏠</span>
+              <img src={ICONS.HOME} alt="home" className="w-5 h-5" />
               <span>Home Portal</span>
             </RetroButton>
 
@@ -88,7 +89,7 @@ const App: React.FC = () => {
                 onClick={() => setActiveTool(tool.id)}
                 className="w-full justify-start text-xs font-bold uppercase py-2"
               >
-                <span className="text-xl">{tool.icon}</span>
+                <img src={tool.icon} alt={tool.name} className="w-5 h-5" />
                 <span className="truncate">{tool.name}</span>
               </RetroButton>
             ))}

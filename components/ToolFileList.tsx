@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { Document, Packer, Paragraph, Run, HeadingLevel } from 'docx';
+import { ICONS } from '../src/icons.ts';
 
 interface ScanItem {
   name: string;
@@ -97,8 +98,11 @@ const ToolFileList: React.FC = () => {
   };
 
   const copyToClipboard = () => {
-    const text = report.map(item => "  ".repeat(item.level) + (item.isDir ? `[${item.name}]` : `• ${item.name}`)).join("\n");
-    navigator.clipboard.writeText(text);
+    const milestones = Array.from(new Set(report.filter(item => item.isDir).map(item => item.name)));
+    const milestoneText = milestones.length > 0 ? `Milestone items:\n${milestones.map(m => `• ${m}`).join("\n")}\n\n` : "";
+    const treeText = report.map(item => "  ".repeat(item.level) + (item.isDir ? `[${item.name}]` : `• ${item.name}`)).join("\n");
+    
+    navigator.clipboard.writeText(milestoneText + treeText);
     alert("Report copied to clipboard!");
   };
 
@@ -108,35 +112,91 @@ const ToolFileList: React.FC = () => {
       const pad = (n: number) => n.toString().padStart(2, '0');
       const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-      const doc = new Document({
-        sections: [{
-          properties: {},
+      const milestones = Array.from(new Set(report.filter(item => item.isDir).map(item => item.name)));
+
+      const children: any[] = [
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 },
           children: [
+            new Run({
+              text: `Folder Scan Report - ${dateStr}`,
+              color: "000000",
+              font: "Calibri",
+              size: 28, 
+            })
+          ],
+        })
+      ];
+
+      if (milestones.length > 0) {
+        children.push(
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 200, after: 100 },
+            children: [
+              new Run({
+                text: "Milestone items:",
+                bold: true,
+                font: "Calibri",
+                size: 24,
+              })
+            ],
+          })
+        );
+        milestones.forEach(m => {
+          children.push(
             new Paragraph({
-              heading: HeadingLevel.HEADING_1,
-              spacing: { after: 200 },
+              bullet: { level: 0 },
               children: [
                 new Run({
-                  text: `Folder Scan Report - ${dateStr}`,
-                  color: "000000",
-                  font: "Calibri",
-                  size: 28, 
-                })
-              ],
-            }),
-            ...report.map(item => new Paragraph({
-              bullet: {
-                level: item.level,
-              },
-              children: [
-                new Run({
-                  text: item.name,
+                  text: m,
                   font: "Cambria",
                   size: 22,
                 })
               ],
-            }))
-          ]
+            })
+          );
+        });
+        children.push(new Paragraph({ spacing: { after: 200 } })); // Spacer
+      }
+
+      children.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 200, after: 100 },
+          children: [
+            new Run({
+              text: "Detailed Inventory:",
+              bold: true,
+              font: "Calibri",
+              size: 24,
+            })
+          ],
+        })
+      );
+
+      report.forEach(item => {
+        children.push(
+          new Paragraph({
+            bullet: {
+              level: item.level,
+            },
+            children: [
+              new Run({
+                text: item.name,
+                font: "Cambria",
+                size: 22,
+              })
+            ],
+          })
+        );
+      });
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: children
         }]
       });
 
@@ -158,12 +218,16 @@ const ToolFileList: React.FC = () => {
   return (
     <div className="p-4 space-y-4 font-serif text-black">
       <h2 className="text-2xl font-bold border-b-2 border-black mb-4 flex items-center gap-2 text-black">
-        📂 Files to Documents List
+        <img src={ICONS.FOLDER} alt="folder" className="w-6 h-6" />
+        Files to Documents List
       </h2>
 
       {/* High Contrast Privacy Box - Sharp Black/White Contrast */}
       <div className="retro-inset bg-white p-4 mb-4 text-xs border-l-8 border-black shadow-sm">
-        <p className="font-black text-black mb-1 uppercase tracking-tighter text-sm">🛡️ LOCAL PRIVACY PROTOCOL ACTIVE</p>
+        <p className="font-black text-black mb-1 uppercase tracking-tighter text-sm flex items-center gap-2">
+          <img src={ICONS.SHIELD} alt="shield" className="w-4 h-4" />
+          LOCAL PRIVACY PROTOCOL ACTIVE
+        </p>
         <p className="text-black font-medium leading-relaxed">
           SECURITY ALERT: Although your browser uses the term "upload," your source files <strong>NEVER LEAVE YOUR LOCAL MACHINE</strong>. 
           The Produce-o-tron 3000 logic executes purely within your workstation's memory to generate this metadata inventory. 
@@ -213,16 +277,23 @@ const ToolFileList: React.FC = () => {
 
         <div className="flex gap-2 flex-wrap pt-2">
           <RetroButton onClick={triggerPicker} active={loading} className="text-black font-black bg-white hover:bg-gray-100">
-            {loading ? 'ANALYZING DISK...' : '🚀 SCAN LOCAL DIRECTORY'}
+            {loading ? 'ANALYZING DISK...' : (
+              <span className="flex items-center gap-2">
+                <img src={ICONS.ROCKET} alt="rocket" className="w-4 h-4" />
+                SCAN LOCAL DIRECTORY
+              </span>
+            )}
           </RetroButton>
           
           {report.length > 0 && (
             <>
               <RetroButton onClick={copyToClipboard} className="text-black font-black">
-                📋 COPY TEXT
+                <img src={ICONS.DUPLICATE} alt="copy" className="w-4 h-4" />
+                COPY TEXT
               </RetroButton>
               <RetroButton onClick={exportToWord} className="text-black font-black">
-                💾 EXPORT .DOCX
+                <img src={ICONS.SAVE} alt="save" className="w-4 h-4" />
+                EXPORT .DOCX
               </RetroButton>
             </>
           )}
@@ -235,14 +306,33 @@ const ToolFileList: React.FC = () => {
             <span>Local Inventory Manifest</span>
             <span className="text-xs font-normal">TIMESTAMP: {new Date().toLocaleString()}</span>
           </div>
+
+          {/* Milestone Items Section */}
+          <div className="mb-8 p-4 bg-gray-50 border-2 border-black/10">
+            <h3 className="text-black font-black uppercase text-sm mb-3 underline decoration-2 underline-offset-4">Milestone items:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+              {Array.from(new Set(report.filter(item => item.isDir).map(item => item.name))).map((milestone, mIdx) => (
+                <div key={mIdx} className="text-black font-bold text-xs flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-black rounded-full shrink-0" />
+                  {milestone}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             {report.map((item, idx) => (
               <div 
                 key={idx} 
                 style={{ marginLeft: `${item.level * 24}px` }}
-                className={`${item.isDir ? 'font-black text-black text-base' : 'text-black font-medium'}`}
+                className={`${item.isDir ? 'font-black text-black text-base flex items-center gap-2' : 'text-black font-medium'}`}
               >
-                {item.isDir ? `📂 ${item.name.toUpperCase()}` : `• ${item.name}`}
+                {item.isDir ? (
+                  <>
+                    <img src={ICONS.FOLDER} alt="folder" className="w-4 h-4" />
+                    {item.name.toUpperCase()}
+                  </>
+                ) : `• ${item.name}`}
               </div>
             ))}
           </div>
