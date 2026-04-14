@@ -70,7 +70,7 @@ const App: React.FC = () => {
 
       <div className="flex flex-col lg:flex-row gap-6 relative">
         {/* Left Sidebar Navigation */}
-        <nav className={`w-full lg:transition-all lg:duration-300 flex flex-col gap-2 shrink-0 ${isSidebarCollapsed ? 'lg:w-12' : 'lg:w-64'}`}>
+        <nav className={`w-full lg:transition-all lg:duration-300 flex flex-col gap-2 shrink-0 ${isSidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}`}>
           <div className="win95-bg retro-beveled p-2 flex flex-col gap-2 shadow-md border-2 border-gray-300 h-fit relative">
             {/* Collapse Toggle Button (Desktop Only) */}
             <button 
@@ -88,7 +88,7 @@ const App: React.FC = () => {
             <RetroButton 
               active={activeTool === ToolType.HOME}
               onClick={() => setActiveTool(ToolType.HOME)}
-              className={`w-full justify-start text-xs font-bold uppercase py-2 ${isSidebarCollapsed ? 'px-1' : ''}`}
+              className={`w-full justify-start text-xs font-bold uppercase py-2 ${isSidebarCollapsed ? '!p-0 aspect-square justify-center min-w-0' : 'px-2'}`}
             >
               <span className="text-xl shrink-0">🏠</span>
               {!isSidebarCollapsed && <span className="ml-2">Home Portal</span>}
@@ -99,7 +99,7 @@ const App: React.FC = () => {
                 key={tool.id}
                 active={activeTool === tool.id}
                 onClick={() => setActiveTool(tool.id)}
-                className={`w-full justify-start text-xs font-bold uppercase py-2 ${isSidebarCollapsed ? 'px-1' : ''}`}
+                className={`w-full justify-start text-xs font-bold uppercase py-2 ${isSidebarCollapsed ? '!p-0 aspect-square justify-center min-w-0' : 'px-2'}`}
               >
                 <span className="text-xl shrink-0">{tool.icon}</span>
                 {!isSidebarCollapsed && <span className="ml-2 truncate">{tool.name}</span>}

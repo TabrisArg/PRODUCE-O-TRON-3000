@@ -18,7 +18,6 @@ const RetroButton: React.FC<RetroButtonProps> = ({ children, onClick, className 
         ${active ? 'retro-inset shadow-inner' : 'retro-beveled'}
         ${className}
       `}
-      style={{ minWidth: '120px' }}
     >
       <span className="flex items-center justify-center gap-2">
         {children}
