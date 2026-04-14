@@ -8,6 +8,7 @@ import ToolProjectArchitect from './components/ToolProjectArchitect.tsx';
 
 const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.HOME);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const renderTool = () => {
     switch (activeTool) {
@@ -67,18 +68,30 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 relative">
         {/* Left Sidebar Navigation */}
-        <nav className="w-full lg:w-64 flex flex-col gap-2 shrink-0">
-          <div className="win95-bg retro-beveled p-2 flex flex-col gap-2 shadow-md border-2 border-gray-300 h-fit">
-            <div className="text-[10px] font-bold text-gray-600 uppercase px-2 mb-1 border-b border-gray-400">Main Menu</div>
+        <nav className={`w-full lg:transition-all lg:duration-300 flex flex-col gap-2 shrink-0 ${isSidebarCollapsed ? 'lg:w-12' : 'lg:w-64'}`}>
+          <div className="win95-bg retro-beveled p-2 flex flex-col gap-2 shadow-md border-2 border-gray-300 h-fit relative">
+            {/* Collapse Toggle Button (Desktop Only) */}
+            <button 
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="hidden lg:flex absolute -right-3 top-4 w-6 h-6 win95-bg border-2 border-gray-400 items-center justify-center text-[10px] font-bold shadow-sm hover:bg-gray-100 z-50"
+              title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {isSidebarCollapsed ? "»" : "«"}
+            </button>
+
+            <div className={`text-[10px] font-bold text-gray-600 uppercase px-2 mb-1 border-b border-gray-400 truncate ${isSidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>
+              {isSidebarCollapsed ? "..." : "Main Menu"}
+            </div>
+
             <RetroButton 
               active={activeTool === ToolType.HOME}
               onClick={() => setActiveTool(ToolType.HOME)}
-              className="w-full justify-start text-xs font-bold uppercase py-2"
+              className={`w-full justify-start text-xs font-bold uppercase py-2 ${isSidebarCollapsed ? 'px-1' : ''}`}
             >
-              <span className="text-xl">🏠</span>
-              <span>Home Portal</span>
+              <span className="text-xl shrink-0">🏠</span>
+              {!isSidebarCollapsed && <span className="ml-2">Home Portal</span>}
             </RetroButton>
 
             {TOOLS.map((tool) => (
@@ -86,20 +99,12 @@ const App: React.FC = () => {
                 key={tool.id}
                 active={activeTool === tool.id}
                 onClick={() => setActiveTool(tool.id)}
-                className="w-full justify-start text-xs font-bold uppercase py-2"
+                className={`w-full justify-start text-xs font-bold uppercase py-2 ${isSidebarCollapsed ? 'px-1' : ''}`}
               >
-                <span className="text-xl">{tool.icon}</span>
-                <span className="truncate">{tool.name}</span>
+                <span className="text-xl shrink-0">{tool.icon}</span>
+                {!isSidebarCollapsed && <span className="ml-2 truncate">{tool.name}</span>}
               </RetroButton>
             ))}
-          </div>
-          
-          <div className="hidden lg:block win95-bg retro-inset p-3 border-2 border-gray-300 text-[9px] font-mono text-gray-700 leading-tight">
-            <p className="font-bold mb-1">SYSTEM STATS:</p>
-            <p>OS: WIN95 Rev B</p>
-            <p>RAM: 32MB EDO</p>
-            <p>CPU: PENTIUM 133</p>
-            <p className="mt-2 text-blue-800 animate-pulse">DISK ACCESS: READY</p>
           </div>
         </nav>
 

@@ -66,7 +66,7 @@ const ToolProjectArchitect: React.FC = () => {
 
   // --- Settings ---
   const [startDate, setStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
-  const [effortUnit, setEffortUnit] = useState('DAYS');
+  const [effortUnit, setEffortUnit] = useState('MONTHS');
   const [currency, setCurrency] = useState('€');
   const [customCurrency, setCustomCurrency] = useState('');
   const [inefficiency, setInefficiency] = useState(0); // 0% to 200%
@@ -327,10 +327,12 @@ const ToolProjectArchitect: React.FC = () => {
 
         let duration = 0;
         const durationCell = row.getCell(colMap.duration);
-        if (typeof durationCell.value === 'number') {
-          duration = durationCell.value;
-        } else {
-          duration = parseInt(getCellValue(durationCell).replace(/[^\d]/g, '')) || 0;
+        if (durationCell) {
+          if (typeof durationCell.value === 'number') {
+            duration = Math.ceil(durationCell.value);
+          } else {
+            duration = Math.ceil(parseFloat(getCellValue(durationCell).replace(/[^\d.]/g, ''))) || 0;
+          }
         }
 
         const isMilestoneHeader = (duration > 0) || (section && !task && !discipline && effort === 0);
@@ -394,7 +396,10 @@ const ToolProjectArchitect: React.FC = () => {
 
   // --- Logic: Resource Suggestion ---
   const applyAISuggestion = useCallback(() => {
-    if (backlog.length === 0 || milestones.length === 0) return;
+    if (backlog.length === 0 || milestones.length === 0) {
+      console.log("Auto-suggestion skipped: backlog or milestones empty", { backlogLen: backlog.length, msLen: milestones.length });
+      return;
+    }
 
     const newResources: Resource[] = [];
     
@@ -406,7 +411,6 @@ const ToolProjectArchitect: React.FC = () => {
     ));
 
     if (uniqueDisciplines.length === 0) {
-      // Fallback if no disciplines were found
       uniqueDisciplines.push('General');
     }
 
@@ -425,16 +429,20 @@ const ToolProjectArchitect: React.FC = () => {
 
         const totalEffortInUnit = discTasks.reduce((sum, item) => sum + item.effort, 0);
         const requiredMM = totalEffortInUnit * currentUnit.ratioToMonth * (1 + inefficiency / 100);
-        const requiredHeadcount = requiredMM / ms.duration;
+        
+        // Ensure we don't divide by zero
+        const msDuration = Math.max(1, ms.duration);
+        const requiredHeadcount = requiredMM / msDuration;
 
+        // Round up to nearest 0.25, but cap at 1.0 for the initial suggestion
         const val = Math.min(1.0, Math.ceil(requiredHeadcount * 4) / 4);
 
-        const msMonths = projectMonthsList.slice(monthOffset, monthOffset + ms.duration);
+        const msMonths = projectMonthsList.slice(monthOffset, monthOffset + msDuration);
         msMonths.forEach(d => {
           const key = d.toISOString().slice(0, 7);
           allocations[key] = val;
         });
-        monthOffset += ms.duration;
+        monthOffset += msDuration;
       });
 
       newResources.push({
@@ -446,7 +454,7 @@ const ToolProjectArchitect: React.FC = () => {
     });
 
     setResources(newResources);
-  }, [backlog, milestones, selfCost, startDate]);
+  }, [backlog, milestones, selfCost, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName]);
 
   useEffect(() => {
     if (isAutoSync && backlog.length > 0) {
