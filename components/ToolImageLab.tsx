@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { GoogleGenAI } from "@google/genai";
+import { ICONS } from '../src/icons.ts';
 
 const ToolImageLab: React.FC = () => {
   const [prompt, setPrompt] = useState("");
@@ -55,7 +56,8 @@ const ToolImageLab: React.FC = () => {
   return (
     <div className="p-4 space-y-4 font-serif">
       <h2 className="text-2xl font-bold border-b-2 border-black mb-4 flex items-center gap-2">
-        🎨 AI Retro Image Lab
+        <img src={ICONS.BRUSH} alt="brush" className="w-6 h-6" />
+        AI Retro Image Lab
       </h2>
 
       <div className="win95-bg p-4 retro-beveled space-y-4 border-2 border-gray-400">
@@ -72,7 +74,12 @@ const ToolImageLab: React.FC = () => {
 
         <div className="flex justify-end">
           <RetroButton onClick={handleGenerate} active={loading} className="min-w-[150px]">
-            {loading ? "Rendering..." : "🎨 Generate Graphic"}
+            {loading ? "Rendering..." : (
+              <span className="flex items-center gap-2">
+                <img src={ICONS.BRUSH} alt="brush" className="w-4 h-4" />
+                Generate Graphic
+              </span>
+            )}
           </RetroButton>
         </div>
       </div>
@@ -95,10 +102,16 @@ const ToolImageLab: React.FC = () => {
         {imageUrl && (
           <div className="mt-4 flex gap-2">
             <RetroButton onClick={handleDownload}>
-              💾 Save
+              <span className="flex items-center gap-2">
+                <img src={ICONS.SAVE} alt="save" className="w-4 h-4" />
+                Save
+              </span>
             </RetroButton>
             <RetroButton onClick={() => setImageUrl(null)} className="text-red-700">
-              🗑️ Discard
+              <span className="flex items-center gap-2">
+                <img src={ICONS.TRASH} alt="trash" className="w-4 h-4" />
+                Discard
+              </span>
             </RetroButton>
           </div>
         )}

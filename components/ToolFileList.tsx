@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { Document, Packer, Paragraph, Run, HeadingLevel } from 'docx';
+import { ICONS } from '../src/icons.ts';
 
 interface ScanItem {
   name: string;
@@ -228,13 +229,15 @@ const ToolFileList: React.FC = () => {
   return (
     <div className="p-4 space-y-4 font-serif text-black">
       <h2 className="text-2xl font-bold border-b-2 border-black mb-4 flex items-center gap-2 text-black">
-        📂 Files to Documents List
+        <img src={ICONS.FOLDER} alt="folder" className="w-6 h-6" />
+        Files to Documents List
       </h2>
 
       {/* High Contrast Privacy Box - Sharp Black/White Contrast */}
       <div className="retro-inset bg-white p-4 mb-4 text-xs border-l-8 border-black shadow-sm">
         <p className="font-black text-black mb-1 uppercase tracking-tighter text-sm flex items-center gap-2">
-          🛡️ LOCAL PRIVACY PROTOCOL ACTIVE
+          <img src={ICONS.SHIELD} alt="shield" className="w-4 h-4" />
+          LOCAL PRIVACY PROTOCOL ACTIVE
         </p>
         <p className="text-black font-medium leading-relaxed">
           SECURITY ALERT: Although your browser uses the term "upload," your source files <strong>NEVER LEAVE YOUR LOCAL MACHINE</strong>. 
@@ -285,16 +288,23 @@ const ToolFileList: React.FC = () => {
 
         <div className="flex gap-2 flex-wrap pt-2">
           <RetroButton onClick={triggerPicker} active={loading} className="text-black font-black bg-white hover:bg-gray-100">
-            {loading ? 'ANALYZING DISK...' : '🚀 SCAN LOCAL DIRECTORY'}
+            {loading ? 'ANALYZING DISK...' : (
+              <span className="flex items-center gap-2">
+                <img src={ICONS.ROCKET} alt="rocket" className="w-4 h-4" />
+                SCAN LOCAL DIRECTORY
+              </span>
+            )}
           </RetroButton>
           
           {filteredReport.length > 0 && (
             <>
               <RetroButton onClick={copyToClipboard} className="text-black font-black">
-                📋 COPY TEXT
+                <img src={ICONS.COPY} alt="copy" className="w-4 h-4" />
+                COPY TEXT
               </RetroButton>
               <RetroButton onClick={exportToWord} className="text-black font-black">
-                💾 EXPORT .DOCX
+                <img src={ICONS.SAVE} alt="save" className="w-4 h-4" />
+                EXPORT .DOCX
               </RetroButton>
             </>
           )}
@@ -332,7 +342,12 @@ const ToolFileList: React.FC = () => {
                 style={{ marginLeft: `${item.level * 24}px` }}
                 className={`${item.isDir ? 'font-black text-black text-base flex items-center gap-2' : 'text-black font-medium'}`}
               >
-                {item.isDir ? `📂 ${item.displayName.toUpperCase()}` : `• ${item.displayName}`}
+                {item.isDir ? (
+                  <>
+                    <img src={ICONS.FOLDER} alt="folder" className="w-4 h-4" />
+                    {item.displayName.toUpperCase()}
+                  </>
+                ) : `• ${item.displayName}`}
               </div>
             ))}
           </div>

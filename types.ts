@@ -1,3 +1,5 @@
+import React from 'react';
+
 export enum ToolType {
   HOME = 'HOME',
   FILE_LIST = 'FILE_LIST',
@@ -8,6 +10,6 @@ export enum ToolType {
 export interface ToolConfig {
   id: ToolType;
   name: string;
-  icon: string;
+  icon: React.ReactNode;
   description: string;
 }

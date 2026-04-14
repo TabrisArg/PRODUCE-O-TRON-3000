@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ToolType } from './types.ts';
 import { TOOLS } from './constants.tsx';
+import { ICONS } from './src/icons.ts';
 import RetroButton from './components/RetroButton.tsx';
 import ToolFileList from './components/ToolFileList.tsx';
 import ToolCostSimulator from './components/ToolCostSimulator.tsx';
@@ -90,7 +91,9 @@ const App: React.FC = () => {
               onClick={() => setActiveTool(ToolType.HOME)}
               className={`w-full justify-start text-xs font-bold uppercase py-2 ${isSidebarCollapsed ? '!p-0 aspect-square justify-center min-w-0' : 'px-2'}`}
             >
-              <span className="text-xl shrink-0">🏠</span>
+              <span className="text-xl shrink-0">
+                <img src={ICONS.HOME} alt="home" className="w-5 h-5" />
+              </span>
               {!isSidebarCollapsed && <span className="ml-2">Home Portal</span>}
             </RetroButton>
 

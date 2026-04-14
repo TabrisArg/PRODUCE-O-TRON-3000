@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import RetroButton from './RetroButton.tsx';
 import ExcelJS from 'exceljs';
+import { ICONS } from '../src/icons.ts';
 
 interface Resource {
   id: string;
@@ -226,7 +227,8 @@ const ToolCostSimulator: React.FC = () => {
     <div className="p-4 space-y-6 font-serif text-black">
       <div className="flex justify-between items-start border-b-2 border-black pb-2 mb-4">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          💰 Cost Simulator v1.6
+          <img src={ICONS.MONEY} alt="money" className="w-6 h-6" />
+          Cost Simulator v1.6
         </h2>
         <div className="text-[9px] font-mono text-right win95-bg p-1 retro-inset px-2">
           STATUS: {isFetching ? "SYNCHRONIZING..." : "ONLINE"}<br/>
@@ -334,16 +336,25 @@ const ToolCostSimulator: React.FC = () => {
                     </td>
                     <td className="p-1 text-center space-x-1">
                       {res.isOverride && (
-                        <button onClick={() => resetOverride(res.id)} className="text-[10px] text-gray-500 hover:text-black">🔄</button>
+                        <button onClick={() => resetOverride(res.id)} className="text-[10px] text-gray-500 hover:text-black" title="Reset Override">
+                          <img src={ICONS.RECALCULATE} alt="reset" className="w-3 h-3 inline" />
+                        </button>
                       )}
-                      <button onClick={() => removeResource(res.id)} className="text-red-700 font-bold hover:bg-red-100 px-2">×</button>
+                      <button onClick={() => removeResource(res.id)} className="text-red-700 font-bold hover:bg-red-100 px-2" title="Remove Resource">
+                        <img src={ICONS.CLOSE} alt="remove" className="w-3 h-3 inline" />
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <RetroButton onClick={addResource} className="mt-2 text-xs font-bold text-black">➕ Add Resource</RetroButton>
+          <RetroButton onClick={addResource} className="mt-2 text-xs font-bold text-black">
+            <span className="flex items-center gap-2">
+              <img src={ICONS.SUGGEST} alt="add" className="w-4 h-4" />
+              Add Resource
+            </span>
+          </RetroButton>
         </div>
 
         <div className="w-full lg:w-96 shrink-0">
@@ -380,7 +391,10 @@ const ToolCostSimulator: React.FC = () => {
 
             <div className="pt-2">
               <RetroButton className="w-full text-xs font-bold text-black" onClick={handleGenerateExcel}>
-                💾 Generate Excel Report
+                <span className="flex items-center justify-center gap-2">
+                  <img src={ICONS.SAVE} alt="save" className="w-4 h-4" />
+                  Generate Excel Report
+                </span>
               </RetroButton>
             </div>
           </div>
