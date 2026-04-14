@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import RetroButton from './RetroButton.tsx';
-import { ICONS } from '../src/icons.ts';
 
 const ToolQuickNotes: React.FC = () => {
   const [notes, setNotes] = useState<string>(() => {
@@ -31,8 +30,7 @@ const ToolQuickNotes: React.FC = () => {
   return (
     <div className="p-4 space-y-4 font-serif h-full flex flex-col">
       <h2 className="text-2xl font-bold border-b-2 border-black mb-4 flex items-center gap-2">
-        <img src={ICONS.COPY} alt="notes" className="w-6 h-6" />
-        Quick Notes
+        📝 Quick Notes
       </h2>
 
       <div className="flex-grow flex flex-col min-h-[400px]">
@@ -51,12 +49,10 @@ const ToolQuickNotes: React.FC = () => {
 
       <div className="flex gap-2 justify-end mt-4">
         <RetroButton onClick={handleDownload}>
-          <img src={ICONS.DISK} alt="save" className="w-4 h-4" />
-          Save to Disk (.txt)
+          💾 Save to Disk (.txt)
         </RetroButton>
         <RetroButton onClick={handleClear} className="text-red-800">
-          <img src={ICONS.TRASH} alt="clear" className="w-4 h-4" />
-          Clear All
+          🗑️ Clear All
         </RetroButton>
       </div>
     </div>

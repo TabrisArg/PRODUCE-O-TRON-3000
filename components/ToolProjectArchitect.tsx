@@ -3,7 +3,6 @@ import RetroButton from './RetroButton.tsx';
 import ExcelJS from 'exceljs';
 import { GAME_DEV_DISCIPLINES } from '../disciplines.ts';
 import { RATIOS } from '../conversions.ts';
-import { ICONS } from '../src/icons.ts';
 
 /**
  * Types & Interfaces
@@ -732,8 +731,7 @@ const ToolProjectArchitect: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center border-b-4 border-black pb-4">
         <h1 className="text-4xl font-black uppercase italic tracking-tighter flex items-center gap-3">
-          <img src={ICONS.CALENDAR} alt="architect" className="w-10 h-10" />
-          Project Architect <span className="text-sm not-italic font-normal opacity-50">v5.0</span>
+          📅 Project Architect <span className="text-sm not-italic font-normal opacity-50">v5.0</span>
         </h1>
         <div className="flex gap-4">
           <RetroButton 
@@ -744,8 +742,7 @@ const ToolProjectArchitect: React.FC = () => {
             }}
             className="text-[10px] py-1 px-4 border border-black bg-red-100 hover:bg-red-200 flex items-center gap-1"
           >
-            <img src={ICONS.TRASH} alt="clear" className="w-3 h-3" />
-            Clear Data
+            🗑️ Clear Data
           </RetroButton>
           <div className="win95-bg p-2 retro-inset border border-black shadow-sm text-[10px] font-mono">
             <span className="block opacity-50 uppercase font-sans font-bold">Total MM</span>
@@ -767,24 +764,13 @@ const ToolProjectArchitect: React.FC = () => {
             <div className="space-y-2">
               <input type="file" accept=".xlsx,.csv" className="hidden" id="backlog-upload" onChange={handleBacklogUpload} />
               <label htmlFor="backlog-upload" className="block w-full text-center py-4 win95-bg retro-beveled cursor-pointer text-sm font-black border-2 border-gray-500 hover:bg-gray-100 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 flex items-center justify-center gap-2">
-                {isImporting ? (
-                  <>
-                    <img src={ICONS.HOURGLASS} alt="loading" className="w-4 h-4 animate-spin" />
-                    PARSING...
-                  </>
-                ) : (
-                  <>
-                    <img src={ICONS.FOLDER} alt="upload" className="w-4 h-4" />
-                    UPLOAD BACKLOG
-                  </>
-                )}
+                {isImporting ? '⌛ PARSING...' : '📂 UPLOAD BACKLOG'}
               </label>
               <button 
                 onClick={downloadSampleBacklog}
                 className="w-full text-center py-2 win95-bg retro-beveled cursor-pointer text-[10px] font-bold border-2 border-gray-500 hover:bg-gray-100 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 uppercase flex items-center justify-center gap-1"
               >
-                <img src={ICONS.DOWN_ARROW} alt="download" className="w-3 h-3" />
-                Download Sample Template
+                ⬇️ Download Sample Template
               </button>
             </div>
             {backlog.length > 0 && (
@@ -920,15 +906,13 @@ const ToolProjectArchitect: React.FC = () => {
                 {workloadAlerts.length > 0 && (
                   <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-2 py-1 rounded animate-pulse">
                     <span className="text-[10px] font-black text-red-600">
-                      <img src={ICONS.DELETE} alt="alert" className="w-3 h-3 inline-block mr-1" />
-                      {workloadAlerts.length} OVERLOADS DETECTED
+                      ⚠️ {workloadAlerts.length} OVERLOADS DETECTED
                     </span>
                   </div>
                 )}
               </div>
               <RetroButton onClick={applyAISuggestion} className="text-[10px] py-1 px-4 border border-black bg-white hover:bg-gray-100">
-                <img src={ICONS.RECALCULATE} alt="recalc" className="w-3 h-3" />
-                Re-calculate Headcount
+                🔄 Re-calculate Headcount
               </RetroButton>
             </div>
 
@@ -963,8 +947,7 @@ const ToolProjectArchitect: React.FC = () => {
                         onClick={addMilestone}
                         className="w-full text-[9px] py-1 bg-blue-50 border border-blue-600 text-blue-700 hover:bg-blue-100 rounded uppercase font-black shadow-sm active:shadow-none active:translate-y-0.5 flex items-center justify-center gap-1"
                       >
-                        <img src={ICONS.ADD_PHASE} alt="add" className="w-3 h-3" />
-                        Add Phase
+                        ➕ Add Phase
                       </button>
                     </th>
                     {milestones.map((ms, idx) => (
@@ -982,7 +965,7 @@ const ToolProjectArchitect: React.FC = () => {
                               className="hover:scale-125 disabled:opacity-20 transition-transform"
                               title="Move Left"
                             >
-                              <img src={ICONS.MOVE_LEFT} alt="left" className="w-3 h-3" />
+                              ◀
                             </button>
                             <input 
                               className="bg-white/40 border-none text-center w-full focus:bg-white outline-none rounded px-1 py-0.5 text-[10px] placeholder-black/30" 
@@ -996,7 +979,7 @@ const ToolProjectArchitect: React.FC = () => {
                               className="hover:scale-125 disabled:opacity-20 transition-transform"
                               title="Move Right"
                             >
-                              <img src={ICONS.MOVE_RIGHT} alt="right" className="w-3 h-3" />
+                              ▶
                             </button>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1021,7 +1004,7 @@ const ToolProjectArchitect: React.FC = () => {
                                 className="w-6 h-6 border-2 border-black/20 rounded shadow-sm hover:scale-110 transition-transform flex items-center justify-center bg-white/20"
                                 title="Change Color"
                               >
-                                <img src={ICONS.COLOR_PICKER} alt="color" className="w-3 h-3" />
+                                🎨
                               </button>
                               
                               {openColorPickerId === ms.id && (
@@ -1055,8 +1038,7 @@ const ToolProjectArchitect: React.FC = () => {
                                       }}
                                       className="w-full text-[9px] py-1.5 win95-bg retro-beveled border border-gray-600 font-black uppercase hover:bg-gray-100 active:retro-inset flex items-center justify-center gap-1"
                                     >
-                                      <img src={ICONS.SUGGEST} alt="suggest" className="w-3 h-3" />
-                                      Suggest
+                                      🎲 Suggest
                                     </button>
                                     
                                     <div className="flex items-center justify-between gap-2 px-1">
@@ -1078,7 +1060,7 @@ const ToolProjectArchitect: React.FC = () => {
                               className="text-red-600 hover:scale-125 transition-transform opacity-0 group-hover:opacity-100"
                               title="Delete Phase"
                             >
-                              <img src={ICONS.DELETE} alt="delete" className="w-4 h-4" />
+                              🗑️
                             </button>
                           </div>
                         </div>
@@ -1104,8 +1086,7 @@ const ToolProjectArchitect: React.FC = () => {
                             onClick={addManualResource}
                             className="text-sm px-6 py-3 bg-green-100 border-2 border-green-600 text-green-700 hover:bg-green-200 rounded font-black uppercase shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:shadow-none active:translate-x-1 active:translate-y-1 flex items-center gap-2"
                           >
-                            <img src={ICONS.ADD_ROLE} alt="add" className="w-5 h-5" />
-                            Add First Role
+                            ➕ Add First Role
                           </button>
                         </div>
                       </td>
@@ -1123,14 +1104,14 @@ const ToolProjectArchitect: React.FC = () => {
                                   disabled={resIdx === 0}
                                   className="p-1 hover:bg-gray-200 disabled:opacity-10 text-[8px] flex items-center justify-center"
                                 >
-                                  <img src={ICONS.UP_ARROW} alt="up" className="w-2 h-2" />
+                                  ▲
                                 </button>
                                 <button 
                                   onClick={() => moveResource(res.id, 'down')}
                                   disabled={resIdx === resources.length - 1}
                                   className="p-1 hover:bg-gray-200 disabled:opacity-10 text-[8px] flex items-center justify-center"
                                 >
-                                  <img src={ICONS.DOWN_ARROW} alt="down" className="w-2 h-2" />
+                                  ▼
                                 </button>
                               </div>
 
@@ -1159,14 +1140,14 @@ const ToolProjectArchitect: React.FC = () => {
                                     title="Duplicate"
                                     className="p-1 hover:bg-blue-100 text-blue-600 text-[10px] border border-blue-200 rounded"
                                   >
-                                    <img src={ICONS.DUPLICATE} alt="duplicate" className="w-3 h-3" />
+                                    📋
                                   </button>
                                   <button 
                                     onClick={() => deleteResource(res.id)}
                                     title="Delete"
                                     className="p-1 hover:bg-red-100 text-red-600 text-[10px] border border-red-200 rounded"
                                   >
-                                    <img src={ICONS.DELETE} alt="delete" className="w-3 h-3" />
+                                    🗑️
                                   </button>
                                 </div>
                               </div>
@@ -1198,8 +1179,7 @@ const ToolProjectArchitect: React.FC = () => {
                             onClick={addManualResource}
                             className="text-[10px] px-2 py-1 bg-green-100 border border-green-600 text-green-700 hover:bg-green-200 rounded flex items-center gap-1"
                           >
-                            <img src={ICONS.ADD_ROLE} alt="add" className="w-3 h-3" />
-                            Add Role
+                            ➕ Add Role
                           </button>
                         </td>
                         {projectMonthsList.map((m, i) => {
@@ -1243,8 +1223,7 @@ const ToolProjectArchitect: React.FC = () => {
                 </div>
               </div>
               <RetroButton onClick={handleExportExcel} className="w-full py-4 text-xl font-black uppercase shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 flex items-center justify-center gap-3">
-                <img src={ICONS.EXPORT} alt="export" className="w-8 h-8" />
-                EXPORT PROJECTION (.XLSX)
+                💾 EXPORT PROJECTION (.XLSX)
               </RetroButton>
             </div>
           </div>

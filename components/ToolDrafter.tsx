@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { GoogleGenAI } from "@google/genai";
-import { ICONS } from '../src/icons.ts';
 
 const ToolDrafter: React.FC = () => {
   const [prompt, setPrompt] = useState("");
@@ -41,8 +40,7 @@ const ToolDrafter: React.FC = () => {
   return (
     <div className="p-4 space-y-4 font-serif">
       <h2 className="text-2xl font-bold border-b-2 border-black mb-4 flex items-center gap-2">
-        <img src={ICONS.BRUSH} alt="draft" className="w-6 h-6" />
-        AI Document Drafter
+        📝 AI Document Drafter
       </h2>
 
       <div className="win95-bg p-4 retro-beveled space-y-4 border-2 border-gray-400">
@@ -72,12 +70,7 @@ const ToolDrafter: React.FC = () => {
           </div>
           <div className="pt-5">
             <RetroButton onClick={handleGenerate} active={loading} className="w-full">
-              {loading ? "Drafting..." : (
-                <span className="flex items-center gap-2">
-                  <img src={ICONS.RECALCULATE} alt="draft" className="w-4 h-4" />
-                  Execute Draft
-                </span>
-              )}
+              {loading ? "Drafting..." : "🔄 Execute Draft"}
             </RetroButton>
           </div>
         </div>
@@ -97,12 +90,10 @@ const ToolDrafter: React.FC = () => {
               navigator.clipboard.writeText(draft);
               alert("Draft copied to clipboard!");
             }}>
-              <img src={ICONS.COPY} alt="copy" className="w-4 h-4" />
-              Copy
+              📋 Copy
             </RetroButton>
             <RetroButton onClick={copyToNotes}>
-              <img src={ICONS.DISK} alt="save" className="w-4 h-4" />
-              Send to Notes
+              💾 Send to Notes
             </RetroButton>
           </div>
         </div>

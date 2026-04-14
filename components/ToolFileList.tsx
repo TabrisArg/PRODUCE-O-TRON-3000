@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import RetroButton from './RetroButton.tsx';
 import { Document, Packer, Paragraph, Run, HeadingLevel } from 'docx';
-import { ICONS } from '../src/icons.ts';
 
 interface ScanItem {
   name: string;
@@ -25,9 +24,9 @@ const ToolFileList: React.FC = () => {
     "bburg_desktop_", "Bloxburg MS4 BG ", "Bloxburg_MS4_"
   ];
 
-  const cleanFileName = (name: string) => {
+  const getCleanedName = (name: string, isDir: boolean) => {
     let newName = name;
-    if (!fullFileNames) {
+    if (!isDir && !fullFileNames) {
       REMOVE_LIST.forEach(str => {
         newName = newName.split(str).join("");
       });
@@ -37,6 +36,21 @@ const ToolFileList: React.FC = () => {
     }
     return newName;
   };
+
+  const filteredReport = React.useMemo(() => {
+    return report
+      .filter(item => {
+        if (ignoreDocuments) {
+          const parts = item.path.toLowerCase().split('/');
+          if (parts.includes('documents')) return false;
+        }
+        return true;
+      })
+      .map(item => ({
+        ...item,
+        displayName: getCleanedName(item.name, item.isDir)
+      }));
+  }, [report, ignoreDocuments, fullFileNames, keepUnderscores]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -52,11 +66,6 @@ const ToolFileList: React.FC = () => {
       const fullPath = file.webkitRelativePath || '';
       const parts = fullPath.split('/');
       
-      // Ignore 'documents' folder if enabled
-      if (ignoreDocuments && parts.some((part: string) => part === 'documents')) {
-        return;
-      }
-
       let currentPath = "";
       for (let i = 0; i < parts.length - 1; i++) {
         const dirName = parts[i];
@@ -74,9 +83,8 @@ const ToolFileList: React.FC = () => {
       }
 
       const fileName = parts[parts.length - 1];
-      const cleanedName = cleanFileName(fileName);
       items.push({
-        name: cleanedName,
+        name: fileName,
         level: parts.length - 1,
         isDir: false,
         path: fullPath
@@ -98,9 +106,11 @@ const ToolFileList: React.FC = () => {
   };
 
   const copyToClipboard = () => {
-    const milestones = Array.from(new Set(report.filter(item => item.isDir).map(item => item.name)));
-    const milestoneText = milestones.length > 0 ? `Milestone items:\n${milestones.map(m => `• ${m}`).join("\n")}\n\n` : "";
-    const treeText = report.map(item => "  ".repeat(item.level) + (item.isDir ? `[${item.name}]` : `• ${item.name}`)).join("\n");
+    const milestoneItems = filteredReport.filter(item => item.isDir);
+    const milestoneText = milestoneItems.length > 0 
+      ? `Milestone items:\n${milestoneItems.map(m => "  ".repeat(m.level) + `• ${m.displayName}`).join("\n")}\n\n` 
+      : "";
+    const treeText = filteredReport.map(item => "  ".repeat(item.level) + (item.isDir ? `[${item.displayName}]` : `• ${item.displayName}`)).join("\n");
     
     navigator.clipboard.writeText(milestoneText + treeText);
     alert("Report copied to clipboard!");
@@ -112,7 +122,7 @@ const ToolFileList: React.FC = () => {
       const pad = (n: number) => n.toString().padStart(2, '0');
       const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-      const milestones = Array.from(new Set(report.filter(item => item.isDir).map(item => item.name)));
+      const milestoneItems = filteredReport.filter(item => item.isDir);
 
       const children: any[] = [
         new Paragraph({
@@ -129,7 +139,7 @@ const ToolFileList: React.FC = () => {
         })
       ];
 
-      if (milestones.length > 0) {
+      if (milestoneItems.length > 0) {
         children.push(
           new Paragraph({
             heading: HeadingLevel.HEADING_2,
@@ -144,13 +154,13 @@ const ToolFileList: React.FC = () => {
             ],
           })
         );
-        milestones.forEach(m => {
+        milestoneItems.forEach(m => {
           children.push(
             new Paragraph({
-              bullet: { level: 0 },
+              bullet: { level: m.level },
               children: [
                 new Run({
-                  text: m,
+                  text: m.displayName,
                   font: "Cambria",
                   size: 22,
                 })
@@ -176,7 +186,7 @@ const ToolFileList: React.FC = () => {
         })
       );
 
-      report.forEach(item => {
+      filteredReport.forEach(item => {
         children.push(
           new Paragraph({
             bullet: {
@@ -184,7 +194,7 @@ const ToolFileList: React.FC = () => {
             },
             children: [
               new Run({
-                text: item.name,
+                text: item.displayName,
                 font: "Cambria",
                 size: 22,
               })
@@ -218,15 +228,13 @@ const ToolFileList: React.FC = () => {
   return (
     <div className="p-4 space-y-4 font-serif text-black">
       <h2 className="text-2xl font-bold border-b-2 border-black mb-4 flex items-center gap-2 text-black">
-        <img src={ICONS.FOLDER} alt="folder" className="w-6 h-6" />
-        Files to Documents List
+        📂 Files to Documents List
       </h2>
 
       {/* High Contrast Privacy Box - Sharp Black/White Contrast */}
       <div className="retro-inset bg-white p-4 mb-4 text-xs border-l-8 border-black shadow-sm">
         <p className="font-black text-black mb-1 uppercase tracking-tighter text-sm flex items-center gap-2">
-          <img src={ICONS.SHIELD} alt="shield" className="w-4 h-4" />
-          LOCAL PRIVACY PROTOCOL ACTIVE
+          🛡️ LOCAL PRIVACY PROTOCOL ACTIVE
         </p>
         <p className="text-black font-medium leading-relaxed">
           SECURITY ALERT: Although your browser uses the term "upload," your source files <strong>NEVER LEAVE YOUR LOCAL MACHINE</strong>. 
@@ -277,30 +285,23 @@ const ToolFileList: React.FC = () => {
 
         <div className="flex gap-2 flex-wrap pt-2">
           <RetroButton onClick={triggerPicker} active={loading} className="text-black font-black bg-white hover:bg-gray-100">
-            {loading ? 'ANALYZING DISK...' : (
-              <span className="flex items-center gap-2">
-                <img src={ICONS.ROCKET} alt="rocket" className="w-4 h-4" />
-                SCAN LOCAL DIRECTORY
-              </span>
-            )}
+            {loading ? 'ANALYZING DISK...' : '🚀 SCAN LOCAL DIRECTORY'}
           </RetroButton>
           
-          {report.length > 0 && (
+          {filteredReport.length > 0 && (
             <>
               <RetroButton onClick={copyToClipboard} className="text-black font-black">
-                <img src={ICONS.DUPLICATE} alt="copy" className="w-4 h-4" />
-                COPY TEXT
+                📋 COPY TEXT
               </RetroButton>
               <RetroButton onClick={exportToWord} className="text-black font-black">
-                <img src={ICONS.SAVE} alt="save" className="w-4 h-4" />
-                EXPORT .DOCX
+                💾 EXPORT .DOCX
               </RetroButton>
             </>
           )}
         </div>
       </div>
 
-      {report.length > 0 && (
+      {filteredReport.length > 0 && (
         <div className="mt-6 p-6 retro-inset bg-white min-h-[300px] font-mono text-sm overflow-auto max-h-[50vh] border-2 border-black">
           <div className="text-black font-black mb-6 border-b-4 border-black pb-2 flex justify-between items-end uppercase">
             <span>Local Inventory Manifest</span>
@@ -310,36 +311,35 @@ const ToolFileList: React.FC = () => {
           {/* Milestone Items Section */}
           <div className="mb-8 p-4 bg-gray-50 border-2 border-black/10">
             <h3 className="text-black font-black uppercase text-sm mb-3 underline decoration-2 underline-offset-4">Milestone items:</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
-              {Array.from(new Set(report.filter(item => item.isDir).map(item => item.name))).map((milestone, mIdx) => (
-                <div key={mIdx} className="text-black font-bold text-xs flex items-center gap-2">
+            <div className="space-y-1">
+              {filteredReport.filter(item => item.isDir).map((milestone, mIdx) => (
+                <div 
+                  key={mIdx} 
+                  style={{ marginLeft: `${milestone.level * 20}px` }}
+                  className="text-black font-bold text-xs flex items-center gap-2"
+                >
                   <span className="w-1.5 h-1.5 bg-black rounded-full shrink-0" />
-                  {milestone}
+                  {milestone.displayName}
                 </div>
               ))}
             </div>
           </div>
 
           <div className="space-y-1.5">
-            {report.map((item, idx) => (
+            {filteredReport.map((item, idx) => (
               <div 
                 key={idx} 
                 style={{ marginLeft: `${item.level * 24}px` }}
                 className={`${item.isDir ? 'font-black text-black text-base flex items-center gap-2' : 'text-black font-medium'}`}
               >
-                {item.isDir ? (
-                  <>
-                    <img src={ICONS.FOLDER} alt="folder" className="w-4 h-4" />
-                    {item.name.toUpperCase()}
-                  </>
-                ) : `• ${item.name}`}
+                {item.isDir ? `📂 ${item.displayName.toUpperCase()}` : `• ${item.displayName}`}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {report.length === 0 && !loading && (
+      {filteredReport.length === 0 && !loading && (
         <div className="text-center p-12 opacity-40 italic text-black font-bold uppercase tracking-widest">
           SYSTEM IDLE: PLEASE SELECT A DIRECTORY TO INVENTORY
         </div>
