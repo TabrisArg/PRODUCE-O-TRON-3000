@@ -205,7 +205,7 @@ const ToolCostSimulator: React.FC = () => {
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
       currency: currencyCode,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 2
     }).format(val);
   };
 
@@ -273,27 +273,30 @@ const ToolCostSimulator: React.FC = () => {
           <label className="block text-[10px] font-bold uppercase text-black leading-tight">Default Cost / Mo</label>
           <input 
             type="number"
+            step="any"
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black"
             value={avgCost}
-            onChange={(e) => setAvgCost(Math.max(0, parseInt(e.target.value) || 0))}
+            onChange={(e) => setAvgCost(Math.max(0, parseFloat(e.target.value) || 0))}
           />
         </div>
         <div className="space-y-1">
           <label className="block text-[10px] font-bold uppercase text-black leading-tight">Profit Margin %</label>
           <input 
             type="number"
+            step="any"
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black"
             value={margin}
-            onChange={(e) => setMargin(Math.max(0, parseInt(e.target.value) || 0))}
+            onChange={(e) => setMargin(Math.max(0, parseFloat(e.target.value) || 0))}
           />
         </div>
         <div className="space-y-1">
           <label className="block text-[10px] font-bold uppercase text-black leading-tight">Contingency %</label>
           <input 
             type="number"
+            step="any"
             className="w-full p-1 retro-inset font-mono text-xs bg-white text-black"
             value={contingency}
-            onChange={(e) => setContingency(Math.max(0, parseInt(e.target.value) || 0))}
+            onChange={(e) => setContingency(Math.max(0, parseFloat(e.target.value) || 0))}
           />
         </div>
       </div>
@@ -328,9 +331,10 @@ const ToolCostSimulator: React.FC = () => {
                         {res.isOverride && <span className="text-[9px] text-blue-700 font-bold uppercase">[Override]</span>}
                         <input 
                           type="number"
+                          step="any"
                           className={`w-28 text-right p-1 bg-transparent border-none focus:outline-none ${res.isOverride ? 'font-bold text-black' : 'text-gray-900 font-normal'}`}
                           value={res.monthlyCost}
-                          onChange={(e) => updateResourceCost(res.id, parseInt(e.target.value) || 0)}
+                          onChange={(e) => updateResourceCost(res.id, parseFloat(e.target.value) || 0)}
                         />
                       </div>
                     </td>
