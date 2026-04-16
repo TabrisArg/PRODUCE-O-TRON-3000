@@ -74,6 +74,7 @@ const ToolProjectArchitect: React.FC = () => {
   const [selfCostStr, setSelfCostStr] = useState("1000");
   const [isAutoSync, setIsAutoSync] = useState(true);
   const [openColorPickerId, setOpenColorPickerId] = useState<string | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // --- Derived Values ---
   const margin = parseFloat(marginStr) || 0;
@@ -766,7 +767,18 @@ const ToolProjectArchitect: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar: Controls */}
-        <div className="lg:col-span-1 space-y-6">
+        {!isSidebarCollapsed && (
+          <div className="lg:col-span-1 space-y-6">
+            <div className="flex justify-end mb-2">
+              <button 
+                onClick={() => setIsSidebarCollapsed(true)}
+                className="text-[10px] px-2 py-1 win95-bg border border-gray-600 hover:bg-gray-100 flex items-center gap-1 font-bold"
+                title="Collapse Sidebar"
+              >
+                <img src={ICONS.MOVE_LEFT} alt="collapse" className="w-3 h-3" />
+                COLLAPSE
+              </button>
+            </div>
           {/* Step 1: Import */}
           <div className="win95-bg p-4 retro-beveled border-2 border-gray-400">
             <h3 className="font-black text-xs uppercase mb-3 border-b border-gray-400 pb-1">1. Import Backlog</h3>
@@ -910,12 +922,22 @@ const ToolProjectArchitect: React.FC = () => {
           )}
 
         </div>
-
+        )}
+        
         {/* Main Content: Matrix */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className={`${isSidebarCollapsed ? 'lg:col-span-4' : 'lg:col-span-3'} space-y-6`}>
           <div className="win95-bg p-4 retro-beveled border-2 border-gray-400 min-h-[600px] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-4">
+                {isSidebarCollapsed && (
+                  <button 
+                    onClick={() => setIsSidebarCollapsed(false)}
+                    className="p-1 win95-bg border border-gray-600 hover:bg-gray-100 flex items-center justify-center"
+                    title="Expand Sidebar"
+                  >
+                    <img src={ICONS.MOVE_RIGHT} alt="expand" className="w-4 h-4" />
+                  </button>
+                )}
                 <h3 className="font-black text-lg uppercase italic underline decoration-blue-500">Allocation Matrix</h3>
                 {workloadAlerts.length > 0 && (
                   <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-2 py-1 rounded animate-pulse">
