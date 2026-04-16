@@ -959,7 +959,7 @@ const ToolProjectArchitect: React.FC = () => {
               <table className="w-full text-[10px] font-mono border-collapse min-w-[1000px]">
                 <thead className="sticky top-0 z-20 bg-gray-200 shadow-sm">
                   <tr>
-                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-72 p-2">
+                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-80 min-w-[320px] p-2">
                       <button 
                         onClick={addMilestone}
                         className="w-full text-[9px] py-1 bg-blue-50 border border-blue-600 text-blue-700 hover:bg-blue-100 rounded uppercase font-black shadow-sm active:shadow-none active:translate-y-0.5 flex items-center justify-center gap-1"
@@ -1117,8 +1117,8 @@ const ToolProjectArchitect: React.FC = () => {
                     <>
                       {resources.map((res, resIdx) => (
                         <tr key={res.id} className="border-b border-gray-100 hover:bg-blue-50 group">
-                          <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold">
-                            <div className="flex items-center h-full">
+                          <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold w-80 min-w-[320px]">
+                            <div className="flex items-center h-full w-full overflow-hidden">
                               {/* Reorder Handles */}
                               <div className="flex flex-col border-r border-gray-200 bg-gray-50 shrink-0">
                                 <button 
@@ -1138,7 +1138,7 @@ const ToolProjectArchitect: React.FC = () => {
                               </div>
 
                               {/* Role Name & Actions */}
-                              <div className="flex-grow flex items-center px-2 gap-2 overflow-hidden">
+                              <div className="flex-grow flex items-center px-2 gap-2 min-w-0">
                                 <div className="flex flex-col flex-grow min-w-0">
                                   <input 
                                     className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0.5 w-full text-xs font-bold"
@@ -1156,7 +1156,7 @@ const ToolProjectArchitect: React.FC = () => {
                                   </div>
                                 </div>
                                 
-                                <div className="hidden group-hover:flex items-center gap-2 shrink-0">
+                                <div className="invisible group-hover:visible flex items-center gap-2 shrink-0 ml-auto">
                                   <button 
                                     onClick={() => duplicateResource(res.id)}
                                     title="Duplicate"
