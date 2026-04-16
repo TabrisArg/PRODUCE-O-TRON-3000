@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ToolType } from './types.ts';
 import { TOOLS } from './constants.tsx';
 import { ICONS } from './src/icons.ts';
+import leftGif from './src/assets/gifs/left-gif.gif';
+import rightGif from './src/assets/gifs/placeholder2.gif';
 import RetroButton from './components/RetroButton.tsx';
 import ToolFileList from './components/ToolFileList.tsx';
 import ToolCostSimulator from './components/ToolCostSimulator.tsx';
@@ -48,7 +50,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4 md:gap-6 overflow-hidden">
             {/* Left GIF */}
             <img 
-              src="/left-gif.gif" 
+              src={leftGif} 
               alt="" 
               className="h-12 md:h-20 w-auto pixelated shrink-0" 
             />
@@ -61,7 +63,7 @@ const App: React.FC = () => {
 
             {/* Right GIF (Mirrored) */}
             <img 
-              src="/placeholder.gif" 
+              src={rightGif} 
               alt="" 
               className="h-12 md:h-20 w-auto pixelated -scale-x-100 shrink-0" 
             />

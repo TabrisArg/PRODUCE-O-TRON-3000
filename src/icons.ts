@@ -1,3 +1,10 @@
+import saveGif from './assets/gifs/save.gif';
+import shieldGif from './assets/gifs/shield.gif';
+import rocketGif from './assets/gifs/rocket.gif';
+import homeGif from './assets/gifs/home.gif';
+import costGif from './assets/gifs/cost.gif';
+import arquitectGif from './assets/gifs/arquitect.gif';
+
 /**
  * Central registry for application icons/gifs.
  * Replace the placeholder URLs with your final GIF/Image URLs.
@@ -12,19 +19,19 @@ export const ICONS = {
   SUGGEST: "https://placehold.co/16x16/red/red.png",
   ADD_PHASE: "https://placehold.co/16x16/red/red.png",
   ADD_ROLE: "https://placehold.co/16x16/red/red.png",
-  SAVE: "/save.gif",
+  SAVE: saveGif,
   EXPORT: "https://placehold.co/16x16/red/red.png",
   IMPORT: "https://placehold.co/16x16/red/red.png",
   CLOSE: "https://placehold.co/16x16/red/red.png",
   UP_ARROW: "https://placehold.co/16x16/red/red.png",
   DOWN_ARROW: "https://placehold.co/16x16/red/red.png",
   FOLDER: "https://placehold.co/16x16/red/red.png",
-  SHIELD: "/shield.gif",
-  ROCKET: "/rocket.gif",
+  SHIELD: shieldGif,
+  ROCKET: rocketGif,
   ALERT: "https://placehold.co/16x16/red/red.png",
-  HOME: "/home.gif",
-  MONEY: "/cost.gif",
-  CALENDAR: "/arquitect.gif",
+  HOME: homeGif,
+  MONEY: costGif,
+  CALENDAR: arquitectGif,
   BRUSH: "https://placehold.co/16x16/red/red.png",
   TRASH: "https://placehold.co/16x16/red/red.png",
   COPY: "https://placehold.co/16x16/red/red.png",
