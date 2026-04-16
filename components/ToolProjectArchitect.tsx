@@ -413,52 +413,67 @@ const ToolProjectArchitect: React.FC = () => {
     // Calculated required headcount per month to cover the gap, rounded up to nearest integer
     const requiredHeadcount = Math.ceil(gap / targetMilestone.duration) || 1;
 
-    const baseResourceIndex = resources.findIndex(r => {
+    // Try to find an existing resource that matches this discipline's canonical name
+    const existingIndex = resources.findIndex(r => {
       const resCanonical = getCanonicalDisciplineName(r.name);
-      return resCanonical === canonicalName || r.name.toLowerCase().includes(canonicalName.toLowerCase());
-    });
-    const baseResource = baseResourceIndex !== -1 ? resources[baseResourceIndex] : null;
-    
-    const newId = `res-spread-${Date.now()}`;
-    const allocations: Record<string, number> = {};
-    
-    // Initialize all months to 0
-    projectMonthsList.forEach(m => {
-      allocations[m.toISOString().slice(0, 7)] = 0;
+      return resCanonical === canonicalName;
     });
 
-    // Find the months belonging to the target milestone and set the required headcount
-    let monthOffset = 0;
-    for (const m of milestones) {
-      if (m.id === milestoneId) {
-        const msMonths = projectMonthsList.slice(monthOffset, monthOffset + m.duration);
-        msMonths.forEach(d => {
-          allocations[d.toISOString().slice(0, 7)] = requiredHeadcount;
-        });
-        break;
+    if (existingIndex !== -1) {
+      // Update existing row
+      setResources(prev => {
+        const next = [...prev];
+        const res = { ...next[existingIndex] };
+        const newAllocations = { ...res.allocations };
+        
+        let monthOffset = 0;
+        for (const m of milestones) {
+          if (m.id === milestoneId) {
+            const msMonths = projectMonthsList.slice(monthOffset, monthOffset + m.duration);
+            msMonths.forEach(d => {
+              const key = d.toISOString().slice(0, 7);
+              // Add the required headcount to cover the current gap in this phase
+              newAllocations[key] = (newAllocations[key] || 0) + requiredHeadcount;
+            });
+            break;
+          }
+          monthOffset += m.duration;
+        }
+        
+        res.allocations = newAllocations;
+        next[existingIndex] = res;
+        return next;
+      });
+    } else {
+      // Case where no discipline row exists - create a support row
+      const newId = `res-spread-${Date.now()}`;
+      const allocations: Record<string, number> = {};
+      
+      projectMonthsList.forEach(m => {
+        allocations[m.toISOString().slice(0, 7)] = 0;
+      });
+
+      let monthOffset = 0;
+      for (const m of milestones) {
+        if (m.id === milestoneId) {
+          const msMonths = projectMonthsList.slice(monthOffset, monthOffset + m.duration);
+          msMonths.forEach(d => {
+            allocations[d.toISOString().slice(0, 7)] = requiredHeadcount;
+          });
+          break;
+        }
+        monthOffset += m.duration;
       }
-      monthOffset += m.duration;
+
+      const newResource: Resource = {
+        id: newId,
+        name: `${disciplineName} (Support)`,
+        monthlyCost: selfCost || 1000,
+        allocations
+      };
+
+      setResources(prev => [...prev, newResource]);
     }
-
-    const newName = baseResource ? `${baseResource.name} (Support)` : `${disciplineName} (Support)`;
-    const newCost = baseResource ? baseResource.monthlyCost : (selfCost || 1000);
-
-    const newResource: Resource = {
-      id: newId,
-      name: newName,
-      monthlyCost: newCost,
-      allocations
-    };
-
-    setResources(prev => {
-      const newList = [...prev];
-      if (baseResourceIndex !== -1) {
-        newList.splice(baseResourceIndex + 1, 0, newResource);
-      } else {
-        newList.push(newResource);
-      }
-      return newList;
-    });
   };
 
   // --- Logic: Backlog Parsing ---
