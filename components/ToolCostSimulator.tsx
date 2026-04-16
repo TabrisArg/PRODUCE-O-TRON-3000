@@ -355,7 +355,7 @@ const ToolCostSimulator: React.FC = () => {
           </div>
           <RetroButton onClick={addResource} className="mt-2 text-xs font-bold text-black">
             <span className="flex items-center gap-2">
-              <img src={ICONS.SUGGEST} alt="add" className="w-4 h-4" />
+              <img src={ICONS.ADD} alt="add" className="w-4 h-4" />
               Add Resource
             </span>
           </RetroButton>

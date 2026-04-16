@@ -18,7 +18,7 @@ export const TOOLS: ToolConfig[] = [
   {
     id: ToolType.PROJECT_ARCHITECT,
     name: "Project Architect",
-    icon: <img src={ICONS.CALENDAR} alt="calendar" className="w-5 h-5" />,
+    icon: <img src={ICONS.ARQUITECT} alt="calendar" className="w-5 h-5" />,
     description: "Simulate costs, import backlogs, and forecast resource timelines."
   }
 ];

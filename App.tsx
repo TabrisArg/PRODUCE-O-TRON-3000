@@ -48,7 +48,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4 md:gap-6 overflow-hidden">
             {/* Left GIF */}
             <img 
-              src="/left-gif.gif" 
+              src="https://i.ibb.co/d0b8Bp0R/left-gif.gif" 
               alt="" 
               className="h-12 md:h-20 w-auto pixelated shrink-0" 
             />
@@ -61,7 +61,7 @@ const App: React.FC = () => {
 
             {/* Right GIF (Mirrored) */}
             <img 
-              src="/placeholder2.gif" 
+              src="https://i.ibb.co/cXbnZTVJ/mummy.gif" 
               alt="" 
               className="h-12 md:h-20 w-auto pixelated -scale-x-100 shrink-0" 
             />

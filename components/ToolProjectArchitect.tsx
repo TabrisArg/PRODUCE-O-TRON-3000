@@ -54,8 +54,6 @@ const CURRENCIES = [
   { symbol: '$', label: 'USD' },
   { symbol: '£', label: 'GBP' },
   { symbol: '¥', label: 'JPY' },
-  { symbol: '¥', label: 'CNY' },
-  { symbol: 'Fr', label: 'CHF' },
 ];
 
 const ToolProjectArchitect: React.FC = () => {
@@ -752,7 +750,7 @@ const ToolProjectArchitect: React.FC = () => {
             }}
             className="text-[10px] py-1 px-4 border border-black bg-red-100 hover:bg-red-200 flex items-center gap-1"
           >
-            <img src={ICONS.TRASH} alt="clear" className="w-3 h-3" />
+            <img src={ICONS.TRASH} alt="clear" className="w-12 h-12" />
             Clear Data
           </RetroButton>
           <div className="win95-bg p-2 retro-inset border border-black shadow-sm text-[10px] font-mono">
@@ -817,9 +815,9 @@ const ToolProjectArchitect: React.FC = () => {
                   <button
                     key={c.label}
                     onClick={() => { setCurrency(c.symbol); setCustomCurrency(''); }}
-                    className={`px-2 py-1 text-[9px] font-bold border ${currency === c.symbol && !customCurrency ? 'bg-blue-600 text-white border-blue-700' : 'win95-bg border-gray-600 hover:bg-gray-100'}`}
+                    className={`px-3 py-2 text-lg font-bold border ${currency === c.symbol && !customCurrency ? 'bg-blue-600 text-white border-blue-700' : 'win95-bg border-gray-600 hover:bg-gray-100'}`}
                   >
-                    {c.label} ({c.symbol})
+                    {c.symbol}
                   </button>
                 ))}
               </div>
@@ -966,7 +964,7 @@ const ToolProjectArchitect: React.FC = () => {
                         onClick={addMilestone}
                         className="w-full text-[9px] py-1 bg-blue-50 border border-blue-600 text-blue-700 hover:bg-blue-100 rounded uppercase font-black shadow-sm active:shadow-none active:translate-y-0.5 flex items-center justify-center gap-1"
                       >
-                        <img src={ICONS.ADD_PHASE} alt="add" className="w-3 h-3" />
+                        <img src={ICONS.ADD} alt="add" className="w-3 h-3" />
                         Add Phase
                       </button>
                     </th>
@@ -1109,7 +1107,7 @@ const ToolProjectArchitect: React.FC = () => {
                             onClick={addManualResource}
                             className="text-sm px-6 py-3 bg-green-100 border-2 border-green-600 text-green-700 hover:bg-green-200 rounded font-black uppercase shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:shadow-none active:translate-x-1 active:translate-y-1 flex items-center gap-2"
                           >
-                            <img src={ICONS.ADD_ROLE} alt="add" className="w-5 h-5" />
+                            <img src={ICONS.ADD} alt="add" className="w-5 h-5" />
                             Add First Role
                           </button>
                         </div>
@@ -1135,7 +1133,7 @@ const ToolProjectArchitect: React.FC = () => {
                                   disabled={resIdx === resources.length - 1}
                                   className="p-1 hover:bg-gray-200 disabled:opacity-10 text-[8px] flex items-center justify-center"
                                 >
-                                  <img src={ICONS.DOWN_ARROW} alt="down" className="w-2.5 h-2.5" />
+                                  <img src={ICONS.DOWN_ARROW} alt="down" className="w-2.5 h-2.5 -scale-y-100" />
                                 </button>
                               </div>
 
@@ -1203,7 +1201,7 @@ const ToolProjectArchitect: React.FC = () => {
                             onClick={addManualResource}
                             className="text-[10px] px-2 py-1 bg-green-100 border border-green-600 text-green-700 hover:bg-green-200 rounded flex items-center gap-1"
                           >
-                            <img src={ICONS.ADD_ROLE} alt="add" className="w-3 h-3" />
+                            <img src={ICONS.ADD} alt="add" className="w-3 h-3" />
                             Add Role
                           </button>
                         </td>
