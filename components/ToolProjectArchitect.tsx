@@ -400,7 +400,7 @@ const ToolProjectArchitect: React.FC = () => {
       });
     });
     return alerts;
-  }, [backlog, milestones, getWorkloadStatus]);
+  }, [backlog, milestones, resources, inefficiency, currentUnit, getWorkloadStatus]);
 
   const spreadWorkload = (disciplineName: string, milestoneId: string) => {
     const canonicalName = getCanonicalDisciplineName(disciplineName);
