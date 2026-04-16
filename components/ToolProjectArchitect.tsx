@@ -404,15 +404,21 @@ const ToolProjectArchitect: React.FC = () => {
 
   const spreadWorkload = (disciplineName: string, milestoneId: string) => {
     const canonicalName = getCanonicalDisciplineName(disciplineName);
+    const status = getWorkloadStatus(milestoneId, disciplineName);
+    const targetMilestone = milestones.find(m => m.id === milestoneId);
+    
+    if (!targetMilestone) return;
+
+    const gap = Math.max(0, status.requiredMM - status.allocatedMM);
+    // Calculated required headcount per month to cover the gap, rounded up to nearest integer
+    const requiredHeadcount = Math.ceil(gap / targetMilestone.duration) || 1;
+
     const baseResourceIndex = resources.findIndex(r => {
       const resCanonical = getCanonicalDisciplineName(r.name);
       return resCanonical === canonicalName || r.name.toLowerCase().includes(canonicalName.toLowerCase());
     });
     const baseResource = baseResourceIndex !== -1 ? resources[baseResourceIndex] : null;
     
-    const targetMilestone = milestones.find(m => m.id === milestoneId);
-    if (!targetMilestone) return;
-
     const newId = `res-spread-${Date.now()}`;
     const allocations: Record<string, number> = {};
     
@@ -421,20 +427,20 @@ const ToolProjectArchitect: React.FC = () => {
       allocations[m.toISOString().slice(0, 7)] = 0;
     });
 
-    // Find the months belonging to the target milestone and set to 1.0 (100%)
+    // Find the months belonging to the target milestone and set the required headcount
     let monthOffset = 0;
     for (const m of milestones) {
       if (m.id === milestoneId) {
         const msMonths = projectMonthsList.slice(monthOffset, monthOffset + m.duration);
         msMonths.forEach(d => {
-          allocations[d.toISOString().slice(0, 7)] = 1.0;
+          allocations[d.toISOString().slice(0, 7)] = requiredHeadcount;
         });
         break;
       }
       monthOffset += m.duration;
     }
 
-    const newName = baseResource ? `${baseResource.name} (Spread)` : `${disciplineName} (Spread)`;
+    const newName = baseResource ? `${baseResource.name} (Support)` : `${disciplineName} (Support)`;
     const newCost = baseResource ? baseResource.monthlyCost : (selfCost || 1000);
 
     const newResource: Resource = {
