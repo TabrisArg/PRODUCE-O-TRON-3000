@@ -1135,31 +1135,57 @@ const ToolProjectArchitect: React.FC = () => {
             </label>
           </div>
 
-          {/* Step 3: Parsed Backlog Preview */}
+          {/* Step 3: Project Summary */}
           {backlog.length > 0 && (
-            <div className="win95-bg p-4 retro-beveled border-2 border-gray-400 space-y-2 max-h-[400px] flex flex-col">
-              <h3 className="font-black text-xs uppercase border-b border-gray-400 pb-1">3. Parsed Backlog</h3>
-              <div className="overflow-auto retro-inset bg-white flex-grow">
-                <table className="w-full text-[8px] font-mono border-collapse">
-                  <thead className="sticky top-0 bg-gray-200">
-                    <tr>
-                      <th className="border-b border-r border-gray-300 p-1 text-left">Section</th>
-                      <th className="border-b border-r border-gray-300 p-1 text-left">Task</th>
-                      <th className="border-b border-r border-gray-300 p-1 text-left">Disc</th>
-                      <th className="border-b border-gray-300 p-1 text-right">Eff</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {backlog.map((item, i) => (
-                      <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="p-1 border-r border-gray-100 truncate max-w-[60px]">{item.section}</td>
-                        <td className="p-1 border-r border-gray-100 truncate max-w-[80px]">{item.task}</td>
-                        <td className="p-1 border-r border-gray-100 truncate max-w-[60px] font-bold">{item.discipline}</td>
-                        <td className="p-1 text-right">{item.effort}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="win95-bg p-6 retro-beveled border-2 border-gray-400 space-y-4 max-h-[500px] flex flex-col shrink-0">
+              <h3 className="font-black text-sm uppercase border-b-2 border-gray-400 pb-2 flex justify-between items-center">
+                <span>3. Project Summary</span>
+                <span className="text-[10px] lowercase opacity-60 font-normal italic">(Generated from backlog)</span>
+              </h3>
+              
+              <div className="space-y-4 text-sm">
+                {/* Core Stats */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
+                    <div className="text-[10px] font-black uppercase opacity-50 mb-1 leading-none">Total Duration</div>
+                    <div className="text-2xl font-black">
+                      {milestones.reduce((sum, m) => sum + m.duration, 0)} 
+                      <span className="text-xs ml-1 font-bold lowercase">{effortUnit}</span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
+                    <div className="text-[10px] font-black uppercase opacity-50 mb-1 leading-none">Total Milestones</div>
+                    <div className="text-2xl font-black">{milestones.length}</div>
+                  </div>
+                </div>
+
+                {/* Team Composition */}
+                <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
+                  <div className="text-[10px] font-black uppercase opacity-50 mb-2 leading-none">Team Composition</div>
+                  <div className="space-y-2 max-h-[180px] overflow-auto pr-2">
+                    {(() => {
+                      const breakdown: Record<string, number> = {};
+                      resources.forEach(r => {
+                        const canon = getCanonicalDisciplineName(r.name);
+                        breakdown[canon] = (breakdown[canon] || 0) + 1;
+                      });
+                      const entries = Object.entries(breakdown).sort((a,b) => b[1] - a[1]);
+                      if (entries.length === 0) return <div className="text-xs italic opacity-50">No resources allocated yet.</div>;
+                      
+                      return entries.map(([name, count]) => (
+                        <div key={name} className="flex justify-between items-end border-b border-gray-200 pb-1">
+                          <span className="font-bold text-xs truncate max-w-[140px] uppercase">{name}</span>
+                          <span className="text-xs font-mono bg-blue-100 px-1.5 rounded">{count} {count === 1 ? 'Role' : 'Roles'}</span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* Call to Action */}
+                <div className="text-[10px] italic opacity-60 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                  💡 Use the <strong>Apply AI Logic</strong> button below the backlog to automatically calculate these values.
+                </div>
               </div>
             </div>
           )}
