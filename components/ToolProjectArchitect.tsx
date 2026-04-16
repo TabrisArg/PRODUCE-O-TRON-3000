@@ -1,4 +1,21 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import RetroButton from './RetroButton.tsx';
 import ExcelJS from 'exceljs';
 import { GAME_DEV_DISCIPLINES } from '../disciplines.ts';
@@ -27,7 +44,7 @@ interface Resource {
   id: string;
   name: string;
   monthlyCost: number;
-  allocations: Record<string, number>; // key: YYYY-MM, value: 0.0 to 1.0
+  allocations: Record<string, number>; // key: YYYY-MM, value: Headcount (e.g. 1.0, 2.0)
 }
 
 /**
@@ -42,11 +59,22 @@ const EFFORT_UNITS = [
 ];
 
 const ALLOCATION_OPTIONS = [
-  { label: '100%', value: 1.0 },
-  { label: '75%', value: 0.75 },
-  { label: '50%', value: 0.5 },
-  { label: '25%', value: 0.25 },
-  { label: '0%', value: 0.0 },
+  { label: '0', value: 0.0 },
+  { label: '0.25', value: 0.25 },
+  { label: '0.5', value: 0.5 },
+  { label: '0.75', value: 0.75 },
+  { label: '1', value: 1.0 },
+  { label: '1.5', value: 1.5 },
+  { label: '2', value: 2.0 },
+  { label: '2.5', value: 2.5 },
+  { label: '3', value: 3.0 },
+  { label: '4', value: 4.0 },
+  { label: '5', value: 5.0 },
+  { label: '6', value: 6.0 },
+  { label: '7', value: 7.0 },
+  { label: '8', value: 8.0 },
+  { label: '9', value: 9.0 },
+  { label: '10', value: 10.0 },
 ];
 
 const CURRENCIES = [
@@ -55,6 +83,166 @@ const CURRENCIES = [
   { symbol: '£', label: 'GBP' },
   { symbol: '¥', label: 'JPY' },
 ];
+
+interface SortableResourceRowProps {
+  res: Resource;
+  resIdx: number;
+  projectMonthsList: Date[];
+  displayCurrency: string;
+  updateResourceName: (id: string, name: string) => void;
+  updateResourceCost: (id: string, cost: number) => void;
+  duplicateResource: (id: string) => void;
+  deleteResource: (id: string) => void;
+  updateAllocation: (resId: string, monthKey: string, val: number) => void;
+  fillSource: { resId: string, monthKey: string, value: number } | null;
+  setFillSource: (source: { resId: string, monthKey: string, value: number } | null) => void;
+  fillTargetKeys: string[];
+  setFillTargetKeys: (keys: string[] | ((prev: string[]) => string[])) => void;
+}
+
+const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
+  res,
+  resIdx,
+  projectMonthsList,
+  displayCurrency,
+  updateResourceName,
+  updateResourceCost,
+  duplicateResource,
+  deleteResource,
+  updateAllocation,
+  fillSource,
+  setFillSource,
+  fillTargetKeys,
+  setFillTargetKeys,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: res.id });
+
+  const getAllocationColor = (val: number) => {
+    if (val <= 0) return 'bg-white';
+    if (val <= 1) return 'bg-blue-50';
+    if (val <= 2) return 'bg-blue-100';
+    if (val <= 3) return 'bg-blue-200';
+    if (val <= 5) return 'bg-blue-300';
+    if (val <= 8) return 'bg-blue-400';
+    return 'bg-blue-500';
+  };
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    position: 'relative' as const,
+  };
+
+  return (
+    <tr 
+      ref={setNodeRef} 
+      style={style} 
+      className={`border-b border-gray-100 hover:bg-blue-50 group ${isDragging ? 'bg-blue-100 shadow-lg' : ''}`}
+    >
+      <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold w-80 min-w-[320px] transition-all duration-300">
+        <div className="flex items-center h-full w-full overflow-hidden">
+          {/* Windows 95 Style Drag Handle */}
+          <div 
+            {...attributes} 
+            {...listeners}
+            className="w-6 self-stretch bg-gray-200 border-r border-gray-400 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center gap-1 py-2"
+            title="Drag to reorder"
+          >
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="w-1 h-1 bg-gray-600 rounded-full shadow-[1px_1px_0px_white]" />
+            ))}
+          </div>
+
+          {/* Role Name & Actions */}
+          <div className="flex-grow flex items-center px-2 gap-2 min-w-0">
+            <div className="flex flex-col flex-grow min-w-0">
+              <input 
+                className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0.5 w-full text-lg font-bold"
+                value={res.name}
+                onChange={e => updateResourceName(res.id, e.target.value)}
+              />
+              <div className="flex items-center gap-1 opacity-60">
+                <span className="text-xs">{displayCurrency}</span>
+                <input 
+                  className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0 w-20 text-sm font-mono"
+                  value={res.monthlyCost}
+                  onChange={e => updateResourceCost(res.id, parseFloat(e.target.value) || 0)}
+                />
+                <span className="text-[11px] uppercase">/ MM</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 shrink-0 ml-auto">
+              <button 
+                onClick={() => duplicateResource(res.id)}
+                title="Duplicate"
+                className="p-1.5 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded shadow-sm"
+              >
+                <img src={ICONS.DUPLICATE} alt="dup" className="w-6 h-6" />
+              </button>
+              <button 
+                onClick={() => deleteResource(res.id)}
+                title="Delete"
+                className="p-1.5 hover:bg-red-100 text-red-600 border border-red-200 rounded shadow-sm"
+              >
+                <img src={ICONS.TRASH} alt="del" className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </td>
+      {projectMonthsList.map((m, i) => {
+        const key = m.toISOString().slice(0, 7);
+        const val = res.allocations[key] || 0;
+        const isFilling = fillSource?.resId === res.id && fillTargetKeys.includes(key);
+        const bgColor = isFilling ? 'bg-blue-600/30' : getAllocationColor(val);
+        
+        return (
+          <td 
+            key={i} 
+            className={`border-r border-gray-100 p-0 relative group/cell transition-colors duration-200 ${bgColor}`}
+            onMouseEnter={() => {
+              if (fillSource && fillSource.resId === res.id) {
+                const sourceIdx = projectMonthsList.findIndex(pm => pm.toISOString().slice(0, 7) === fillSource.monthKey);
+                const currentIdx = i;
+                const start = Math.min(sourceIdx, currentIdx);
+                const end = Math.max(sourceIdx, currentIdx);
+                const newTargets = projectMonthsList.slice(start, end + 1).map(pm => pm.toISOString().slice(0, 7));
+                setFillTargetKeys(newTargets);
+              }
+            }}
+          >
+            <input 
+              type="number"
+              step="any"
+              className={`w-full h-full p-1 text-center outline-none font-bold bg-transparent ${val > 0 ? 'text-blue-900 drop-shadow-sm' : 'text-gray-300'}`}
+              value={val === 0 ? '' : val}
+              placeholder="0"
+              onChange={e => updateAllocation(res.id, key, parseFloat(e.target.value) || 0)}
+            />
+            {/* Excel Fill Handle */}
+            <div 
+              className="absolute bottom-0 right-0 w-2 h-2 bg-blue-600 cursor-crosshair z-20 opacity-0 group-hover/cell:opacity-100 shadow-[0_0_2px_white]"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setFillSource({ resId: res.id, monthKey: key, value: val });
+                setFillTargetKeys([key]);
+              }}
+            />
+          </td>
+        );
+      })}
+    </tr>
+  );
+};
 
 const ToolProjectArchitect: React.FC = () => {
   // --- State ---
@@ -75,6 +263,52 @@ const ToolProjectArchitect: React.FC = () => {
   const [isAutoSync, setIsAutoSync] = useState(true);
   const [openColorPickerId, setOpenColorPickerId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [fillSource, setFillSource] = useState<{ resId: string, monthKey: string, value: number } | null>(null);
+  const [fillTargetKeys, setFillTargetKeys] = useState<string[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setResources((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over?.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleMouseUp = useCallback(() => {
+    if (fillSource && fillTargetKeys.length > 0) {
+      setResources(prev => prev.map(r => {
+        if (r.id === fillSource.resId) {
+          const newAllocations = { ...r.allocations };
+          fillTargetKeys.forEach(key => {
+            newAllocations[key] = fillSource.value;
+          });
+          return { ...r, allocations: newAllocations };
+        }
+        return r;
+      }));
+    }
+    setFillSource(null);
+    setFillTargetKeys([]);
+  }, [fillSource, fillTargetKeys]);
+
+  useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseUp]);
 
   // --- Derived Values ---
   const margin = parseFloat(marginStr) || 0;
@@ -434,8 +668,8 @@ const ToolProjectArchitect: React.FC = () => {
         const msDuration = Math.max(1, ms.duration);
         const requiredHeadcount = requiredMM / msDuration;
 
-        // Round up to nearest 0.25, but cap at 1.0 for the initial suggestion
-        const val = Math.min(1.0, Math.ceil(requiredHeadcount * 4) / 4);
+        // Round up to nearest integer
+        const val = Math.ceil(requiredHeadcount);
 
         const msMonths = projectMonthsList.slice(monthOffset, monthOffset + msDuration);
         msMonths.forEach(d => {
@@ -523,18 +757,6 @@ const ToolProjectArchitect: React.FC = () => {
 
     const newResources = [...resources];
     newResources.splice(sourceIndex + 1, 0, duplicate);
-    setResources(newResources);
-  };
-
-  const moveResource = (id: string, direction: 'up' | 'down') => {
-    const index = resources.findIndex(r => r.id === id);
-    if (index === -1) return;
-    if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === resources.length - 1) return;
-
-    const newResources = [...resources];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    [newResources[index], newResources[targetIndex]] = [newResources[targetIndex], newResources[index]];
     setResources(newResources);
   };
 
@@ -977,11 +1199,16 @@ const ToolProjectArchitect: React.FC = () => {
               </div>
             )}
 
-            <div className="flex-grow retro-inset bg-white overflow-auto border border-gray-400 relative">
-              <table className="w-full text-base font-mono border-collapse min-w-[1000px]">
-                <thead className="sticky top-0 z-20 bg-gray-200 shadow-sm">
+            <div className="flex-grow retro-inset bg-white overflow-x-scroll overflow-y-auto border border-gray-400 relative">
+              <DndContext 
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <table className="w-full text-base font-mono border-collapse min-w-[1000px]">
+                  <thead className="sticky top-0 z-20 bg-gray-200 shadow-sm">
                   <tr>
-                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-60 min-w-[240px] p-2 transition-all duration-300">
+                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-80 min-w-[320px] p-2 transition-all duration-300">
                       <button 
                         onClick={addMilestone}
                         className="w-full text-sm py-1 bg-blue-50 border border-blue-600 text-blue-700 hover:bg-blue-100 rounded uppercase font-black shadow-sm active:shadow-none active:translate-y-0.5 flex items-center justify-center gap-1"
@@ -1137,84 +1364,30 @@ const ToolProjectArchitect: React.FC = () => {
                     </tr>
                   ) : (
                     <>
+                      <SortableContext 
+                      items={resources.map(r => r.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
                       {resources.map((res, resIdx) => (
-                        <tr key={res.id} className="border-b border-gray-100 hover:bg-blue-50 group">
-                          <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold w-60 min-w-[240px] group-hover:w-80 group-hover:min-w-[320px] transition-all duration-300">
-                            <div className="flex items-center h-full w-full overflow-hidden">
-                              {/* Reorder Handles */}
-                              <div className="flex flex-col border-r border-gray-200 bg-gray-50 shrink-0">
-                                <button 
-                                  onClick={() => moveResource(res.id, 'up')}
-                                  disabled={resIdx === 0}
-                                  className="p-1.5 hover:bg-gray-200 disabled:opacity-10 flex items-center justify-center"
-                                >
-                                  <img src={ICONS.UP_ARROW} alt="up" className="w-5 h-5" />
-                                </button>
-                                <button 
-                                  onClick={() => moveResource(res.id, 'down')}
-                                  disabled={resIdx === resources.length - 1}
-                                  className="p-1.5 hover:bg-gray-200 disabled:opacity-10 flex items-center justify-center"
-                                >
-                                  <img src={ICONS.DOWN_ARROW} alt="down" className="w-5 h-5 -scale-y-100" />
-                                </button>
-                              </div>
-
-                              {/* Role Name & Actions */}
-                              <div className="flex-grow flex items-center px-2 gap-2 min-w-0">
-                                <div className="flex flex-col flex-grow min-w-0">
-                                  <input 
-                                    className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0.5 w-full text-lg font-bold"
-                                    value={res.name}
-                                    onChange={e => updateResourceName(res.id, e.target.value)}
-                                  />
-                                  <div className="flex items-center gap-1 opacity-60">
-                                    <span className="text-xs">{displayCurrency}</span>
-                                    <input 
-                                      className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0 w-20 text-sm font-mono"
-                                      value={res.monthlyCost}
-                                      onChange={e => updateResourceCost(res.id, parseFloat(e.target.value) || 0)}
-                                    />
-                                    <span className="text-[11px] uppercase">/ MM</span>
-                                  </div>
-                                </div>
-                                
-                                <div className="invisible group-hover:visible flex items-center gap-2 shrink-0 ml-auto">
-                                  <button 
-                                    onClick={() => duplicateResource(res.id)}
-                                    title="Duplicate"
-                                    className="p-1.5 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded shadow-sm"
-                                  >
-                                    <img src={ICONS.DUPLICATE} alt="dup" className="w-6 h-6" />
-                                  </button>
-                                  <button 
-                                    onClick={() => deleteResource(res.id)}
-                                    title="Delete"
-                                    className="p-1.5 hover:bg-red-100 text-red-600 border border-red-200 rounded shadow-sm"
-                                  >
-                                    <img src={ICONS.TRASH} alt="del" className="w-6 h-6" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          {projectMonthsList.map((m, i) => {
-                            const key = m.toISOString().slice(0, 7);
-                            const val = res.allocations[key] || 0;
-                            return (
-                              <td key={i} className="border-r border-gray-100 p-0">
-                                <select 
-                                  className={`w-full h-full p-1 text-center outline-none cursor-pointer font-bold ${val > 0 ? 'text-blue-800 bg-blue-50/30' : 'text-gray-300'}`}
-                                  value={val}
-                                  onChange={e => updateAllocation(res.id, key, parseFloat(e.target.value))}
-                                >
-                                  {ALLOCATION_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                </select>
-                              </td>
-                            );
-                          })}
-                        </tr>
+                        <SortableResourceRow 
+                          key={res.id}
+                          res={res}
+                          resIdx={resIdx}
+                          projectMonthsList={projectMonthsList}
+                          displayCurrency={displayCurrency}
+                          updateResourceName={updateResourceName}
+                          updateResourceCost={updateResourceCost}
+                          duplicateResource={duplicateResource}
+                          deleteResource={deleteResource}
+                          updateAllocation={updateAllocation}
+                          fillSource={fillSource}
+                          setFillSource={setFillSource}
+                          fillTargetKeys={fillTargetKeys}
+                          setFillTargetKeys={setFillTargetKeys}
+                        />
                       ))}
-                      
+                    </SortableContext>
+                     
                       {/* Summary Rows */}
                       <tr className="bg-gray-100 font-black border-t-2 border-black">
                         <td className="sticky left-0 bg-gray-100 z-10 border-r border-black p-2 uppercase flex justify-between items-center text-sm">
@@ -1245,7 +1418,8 @@ const ToolProjectArchitect: React.FC = () => {
                   )}
                 </tbody>
               </table>
-            </div>
+            </DndContext>
+          </div>
 
             {/* Footer Metrics & Export */}
             <div className="mt-6 p-6 border-4 border-black bg-[#ffffa0] shadow-[6px_6px_0px_rgba(0,0,0,1)]">

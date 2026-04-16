@@ -32,6 +32,32 @@
     .pixelated {
       image-rendering: pixelated;
     }
+    /* Windows 95 Scrollbar */
+    ::-webkit-scrollbar {
+      width: 16px;
+      height: 16px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #c0c0c0;
+      background-image: linear-gradient(45deg, #dfdfdf 25%, transparent 25%, transparent 75%, #dfdfdf 75%, #dfdfdf), 
+                        linear-gradient(45deg, #dfdfdf 25%, transparent 25%, transparent 75%, #dfdfdf 75%, #dfdfdf);
+      background-size: 2px 2px;
+      background-position: 0 0, 1px 1px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c0c0c0;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #808080;
+      border-bottom: 2px solid #808080;
+      box-shadow: inset 1px 1px 0px #dfdfdf, inset -1px -1px 0px #404040;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #d0d0d0;
+    }
+    ::-webkit-scrollbar-corner {
+      background: #c0c0c0;
+    }
   </style>
 </head>
 <body class="p-4 md:p-8">
