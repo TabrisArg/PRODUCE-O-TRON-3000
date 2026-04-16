@@ -959,7 +959,7 @@ const ToolProjectArchitect: React.FC = () => {
               <table className="w-full text-[10px] font-mono border-collapse min-w-[1000px]">
                 <thead className="sticky top-0 z-20 bg-gray-200 shadow-sm">
                   <tr>
-                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-48 p-2">
+                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-72 p-2">
                       <button 
                         onClick={addMilestone}
                         className="w-full text-[9px] py-1 bg-blue-50 border border-blue-600 text-blue-700 hover:bg-blue-100 rounded uppercase font-black shadow-sm active:shadow-none active:translate-y-0.5 flex items-center justify-center gap-1"
@@ -1078,10 +1078,10 @@ const ToolProjectArchitect: React.FC = () => {
 
                             <button 
                               onClick={() => deleteMilestone(ms.id)} 
-                              className="text-red-600 hover:scale-125 transition-transform opacity-0 group-hover:opacity-100"
+                              className="text-red-600 hover:scale-125 transition-transform opacity-0 group-hover:opacity-100 shrink-0"
                               title="Delete Phase"
                             >
-                              <img src={ICONS.TRASH} alt="delete" className="w-3 h-3" />
+                              <img src={ICONS.TRASH} alt="delete" className="w-6 h-6" />
                             </button>
                           </div>
                         </div>
@@ -1117,23 +1117,23 @@ const ToolProjectArchitect: React.FC = () => {
                     <>
                       {resources.map((res, resIdx) => (
                         <tr key={res.id} className="border-b border-gray-100 hover:bg-blue-50 group">
-                          <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold truncate">
+                          <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold">
                             <div className="flex items-center h-full">
                               {/* Reorder Handles */}
-                              <div className="flex flex-col border-r border-gray-200 bg-gray-50">
+                              <div className="flex flex-col border-r border-gray-200 bg-gray-50 shrink-0">
                                 <button 
                                   onClick={() => moveResource(res.id, 'up')}
                                   disabled={resIdx === 0}
-                                  className="p-1 hover:bg-gray-200 disabled:opacity-10 text-[8px] flex items-center justify-center"
+                                  className="p-1.5 hover:bg-gray-200 disabled:opacity-10 flex items-center justify-center"
                                 >
-                                  <img src={ICONS.UP_ARROW} alt="up" className="w-2.5 h-2.5" />
+                                  <img src={ICONS.UP_ARROW} alt="up" className="w-5 h-5" />
                                 </button>
                                 <button 
                                   onClick={() => moveResource(res.id, 'down')}
                                   disabled={resIdx === resources.length - 1}
-                                  className="p-1 hover:bg-gray-200 disabled:opacity-10 text-[8px] flex items-center justify-center"
+                                  className="p-1.5 hover:bg-gray-200 disabled:opacity-10 flex items-center justify-center"
                                 >
-                                  <img src={ICONS.DOWN_ARROW} alt="down" className="w-2.5 h-2.5 -scale-y-100" />
+                                  <img src={ICONS.DOWN_ARROW} alt="down" className="w-5 h-5 -scale-y-100" />
                                 </button>
                               </div>
 
@@ -1156,20 +1156,20 @@ const ToolProjectArchitect: React.FC = () => {
                                   </div>
                                 </div>
                                 
-                                <div className="hidden group-hover:flex items-center gap-1">
+                                <div className="hidden group-hover:flex items-center gap-2 shrink-0">
                                   <button 
                                     onClick={() => duplicateResource(res.id)}
                                     title="Duplicate"
-                                    className="p-1 hover:bg-blue-100 text-blue-600 text-[10px] border border-blue-200 rounded"
+                                    className="p-1.5 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded shadow-sm"
                                   >
-                                    <img src={ICONS.DUPLICATE} alt="dup" className="w-3 h-3" />
+                                    <img src={ICONS.DUPLICATE} alt="dup" className="w-6 h-6" />
                                   </button>
                                   <button 
                                     onClick={() => deleteResource(res.id)}
                                     title="Delete"
-                                    className="p-1 hover:bg-red-100 text-red-600 text-[10px] border border-red-200 rounded"
+                                    className="p-1.5 hover:bg-red-100 text-red-600 border border-red-200 rounded shadow-sm"
                                   >
-                                    <img src={ICONS.TRASH} alt="del" className="w-3 h-3" />
+                                    <img src={ICONS.TRASH} alt="del" className="w-6 h-6" />
                                   </button>
                                 </div>
                               </div>
