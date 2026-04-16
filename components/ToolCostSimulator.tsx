@@ -345,7 +345,7 @@ const ToolCostSimulator: React.FC = () => {
                         </button>
                       )}
                       <button onClick={() => removeResource(res.id)} className="text-red-700 font-bold hover:bg-red-100 px-2" title="Remove Resource">
-                        <img src={ICONS.CLOSE} alt="remove" className="w-3 h-3 inline" />
+                        <img src={ICONS.CLOSE} alt="remove" className="w-9 h-9 inline" />
                       </button>
                     </td>
                   </tr>

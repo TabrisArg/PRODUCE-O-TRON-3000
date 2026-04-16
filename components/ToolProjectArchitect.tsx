@@ -916,18 +916,18 @@ const ToolProjectArchitect: React.FC = () => {
           <div className="win95-bg p-4 retro-beveled border-2 border-gray-400 min-h-[600px] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-4">
-                <h3 className="font-black text-xs uppercase italic underline decoration-blue-500">Allocation Matrix</h3>
+                <h3 className="font-black text-lg uppercase italic underline decoration-blue-500">Allocation Matrix</h3>
                 {workloadAlerts.length > 0 && (
                   <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-2 py-1 rounded animate-pulse">
-                    <span className="text-[10px] font-black text-red-600">
+                    <span className="text-sm font-black text-red-600">
                       ⚠️ {workloadAlerts.length} OVERLOADS DETECTED
                     </span>
                   </div>
                 )}
               </div>
-              <RetroButton onClick={applyAISuggestion} className="text-[10px] py-1 px-4 border border-black bg-white hover:bg-gray-100">
+              <RetroButton onClick={applyAISuggestion} className="text-sm py-1 px-4 border border-black bg-white hover:bg-gray-100">
                 <span className="flex items-center gap-2">
-                  <img src={ICONS.RECALCULATE} alt="recalc" className="w-4 h-4" />
+                  <img src={ICONS.RECALCULATE} alt="recalc" className="w-6 h-6" />
                   Re-calculate Headcount
                 </span>
               </RetroButton>
@@ -935,17 +935,17 @@ const ToolProjectArchitect: React.FC = () => {
 
             {workloadAlerts.length > 0 && (
               <div className="mb-4 p-3 bg-red-50 border-2 border-red-400 retro-beveled space-y-2">
-                <h4 className="text-[10px] font-black uppercase text-red-700">Workload Alerts</h4>
+                <h4 className="text-sm font-black uppercase text-red-700">Workload Alerts</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                   {workloadAlerts.map((alert, i) => (
                     <div key={i} className="bg-white p-2 border border-red-200 flex justify-between items-center gap-2">
-                      <div className="text-[9px]">
+                      <div className="text-sm">
                         <span className="font-black text-red-600">[{alert.milestoneName}]</span> {alert.discipline}: 
                         <span className="ml-1 font-mono">{alert.allocated.toFixed(1)}/{alert.required.toFixed(1)} MM</span>
                       </div>
                       <button 
                         onClick={() => spreadWorkload(alert.discipline, alert.milestoneId)}
-                        className="text-[8px] px-2 py-1 bg-red-600 text-white font-black uppercase hover:bg-red-700 rounded shadow-sm"
+                        className="text-xs px-2 py-1 bg-red-600 text-white font-black uppercase hover:bg-red-700 rounded shadow-sm"
                       >
                         Spread Workload
                       </button>
@@ -956,15 +956,15 @@ const ToolProjectArchitect: React.FC = () => {
             )}
 
             <div className="flex-grow retro-inset bg-white overflow-auto border border-gray-400 relative">
-              <table className="w-full text-[10px] font-mono border-collapse min-w-[1000px]">
+              <table className="w-full text-base font-mono border-collapse min-w-[1000px]">
                 <thead className="sticky top-0 z-20 bg-gray-200 shadow-sm">
                   <tr>
-                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-80 min-w-[320px] p-2">
+                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-60 min-w-[240px] p-2 transition-all duration-300">
                       <button 
                         onClick={addMilestone}
-                        className="w-full text-[9px] py-1 bg-blue-50 border border-blue-600 text-blue-700 hover:bg-blue-100 rounded uppercase font-black shadow-sm active:shadow-none active:translate-y-0.5 flex items-center justify-center gap-1"
+                        className="w-full text-sm py-1 bg-blue-50 border border-blue-600 text-blue-700 hover:bg-blue-100 rounded uppercase font-black shadow-sm active:shadow-none active:translate-y-0.5 flex items-center justify-center gap-1"
                       >
-                        <img src={ICONS.ADD} alt="add" className="w-3 h-3" />
+                        <img src={ICONS.ADD} alt="add" className="w-4 h-4" />
                         Add Phase
                       </button>
                     </th>
@@ -972,7 +972,7 @@ const ToolProjectArchitect: React.FC = () => {
                       <th 
                         key={ms.id} 
                         colSpan={ms.duration} 
-                        className="border-r border-black text-center text-[9px] font-black uppercase px-2 group relative"
+                        className="border-r border-black text-center text-sm font-black uppercase px-2 group relative"
                         style={{ backgroundColor: `#${ms.color.slice(2)}` }}
                       >
                         <div className="flex flex-col items-center gap-1 py-1">
@@ -983,10 +983,10 @@ const ToolProjectArchitect: React.FC = () => {
                               className="hover:scale-125 disabled:opacity-20 transition-transform"
                               title="Move Left"
                             >
-                              <img src={ICONS.MOVE_LEFT} alt="left" className="w-3 h-3" />
+                              <img src={ICONS.MOVE_LEFT} alt="left" className="w-4 h-4" />
                             </button>
                             <input 
-                              className="bg-white/40 border-none text-center w-full focus:bg-white outline-none rounded px-1 py-0.5 text-[10px] placeholder-black/30" 
+                              className="bg-white/40 border-none text-center w-full focus:bg-white outline-none rounded px-1 py-0.5 text-sm placeholder-black/30" 
                               value={ms.name} 
                               placeholder="Phase Name"
                               onChange={e => updateMilestone(ms.id, { name: e.target.value })}
@@ -997,7 +997,7 @@ const ToolProjectArchitect: React.FC = () => {
                               className="hover:scale-125 disabled:opacity-20 transition-transform"
                               title="Move Right"
                             >
-                              <img src={ICONS.MOVE_RIGHT} alt="right" className="w-3 h-3" />
+                              <img src={ICONS.MOVE_RIGHT} alt="right" className="w-4 h-4" />
                             </button>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1019,17 +1019,17 @@ const ToolProjectArchitect: React.FC = () => {
                             <div className="relative color-picker-container">
                               <button 
                                 onClick={() => setOpenColorPickerId(openColorPickerId === ms.id ? null : ms.id)}
-                                className="w-6 h-6 border-2 border-black/20 rounded shadow-sm hover:scale-110 transition-transform flex items-center justify-center bg-white/20"
+                                className="w-8 h-8 border-2 border-black/20 rounded shadow-sm hover:scale-110 transition-transform flex items-center justify-center bg-white/20"
                                 title="Change Color"
                               >
-                                  <img src={ICONS.COLOR_PICKER} alt="color" className="w-3 h-3" />
+                                  <img src={ICONS.COLOR_PICKER} alt="color" className="w-4 h-4" />
                               </button>
                               
                               {openColorPickerId === ms.id && (
                                 <div className="absolute top-full left-0 mt-2 z-50 win95-bg p-3 retro-beveled border-2 border-gray-400 shadow-xl min-w-[140px]">
                                   <div className="flex justify-between items-center mb-2 border-b border-gray-400 pb-1">
-                                    <span className="text-[9px] font-black uppercase">Pick Color</span>
-                                    <button onClick={() => setOpenColorPickerId(null)} className="text-xs hover:text-red-600">×</button>
+                                    <span className="text-sm font-black uppercase">Pick Color</span>
+                                    <button onClick={() => setOpenColorPickerId(null)} className="text-base hover:text-red-600">×</button>
                                   </div>
                                   
                                   <div className="grid grid-cols-3 gap-2 mb-3">
@@ -1054,19 +1054,19 @@ const ToolProjectArchitect: React.FC = () => {
                                         const nextColor = available || MILESTONE_COLORS[Math.floor(Math.random() * MILESTONE_COLORS.length)];
                                         updateMilestone(ms.id, { color: nextColor });
                                       }}
-                                      className="w-full text-[9px] py-1.5 win95-bg retro-beveled border border-gray-600 font-black uppercase hover:bg-gray-100 active:retro-inset flex items-center justify-center gap-1"
+                                      className="w-full text-sm py-1.5 win95-bg retro-beveled border border-gray-600 font-black uppercase hover:bg-gray-100 active:retro-inset flex items-center justify-center gap-1"
                                     >
                                       <span className="flex items-center gap-1">
-                                        <img src={ICONS.SUGGEST} alt="dice" className="w-3 h-3" />
+                                        <img src={ICONS.SUGGEST} alt="dice" className="w-4 h-4" />
                                         Suggest
                                       </span>
                                     </button>
                                     
                                     <div className="flex items-center justify-between gap-2 px-1">
-                                      <span className="text-[8px] font-bold uppercase">Custom:</span>
+                                      <span className="text-xs font-bold uppercase">Custom:</span>
                                       <input 
                                         type="color" 
-                                        className="w-5 h-5 p-0 border border-black/20 bg-transparent cursor-pointer"
+                                        className="w-6 h-6 p-0 border border-black/20 bg-transparent cursor-pointer"
                                         value={`#${ms.color.slice(2)}`}
                                         onChange={e => updateMilestone(ms.id, { color: `FF${e.target.value.slice(1).toUpperCase()}` })}
                                       />
@@ -1088,10 +1088,10 @@ const ToolProjectArchitect: React.FC = () => {
                       </th>
                     ))}
                   </tr>
-                  <tr className="h-8 border-t border-black">
-                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black p-2 text-left uppercase">Resource</th>
+                  <tr className="h-10 border-t border-black">
+                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black p-2 text-left uppercase text-xs">Resource</th>
                     {projectMonthsList.map((m, i) => (
-                      <th key={i} className="border-r border-black p-1 text-[8px] text-center whitespace-nowrap min-w-[80px]">
+                      <th key={i} className="border-r border-black p-1 text-xs text-center whitespace-nowrap min-w-[80px]">
                         M{i+1}<br/>{m.toLocaleString('default', { month: 'short' })}
                       </th>
                     ))}
@@ -1102,12 +1102,12 @@ const ToolProjectArchitect: React.FC = () => {
                     <tr>
                       <td colSpan={projectMonthsList.length + 1} className="p-32 text-center">
                         <div className="flex flex-col items-center gap-4">
-                          <span className="opacity-20 italic font-black uppercase text-xl">Upload backlog or add roles manually</span>
+                          <span className="opacity-20 italic font-black uppercase text-2xl">Upload backlog or add roles manually</span>
                           <button 
                             onClick={addManualResource}
-                            className="text-sm px-6 py-3 bg-green-100 border-2 border-green-600 text-green-700 hover:bg-green-200 rounded font-black uppercase shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:shadow-none active:translate-x-1 active:translate-y-1 flex items-center gap-2"
+                            className="text-lg px-6 py-3 bg-green-100 border-2 border-green-600 text-green-700 hover:bg-green-200 rounded font-black uppercase shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:shadow-none active:translate-x-1 active:translate-y-1 flex items-center gap-2"
                           >
-                            <img src={ICONS.ADD} alt="add" className="w-5 h-5" />
+                            <img src={ICONS.ADD} alt="add" className="w-6 h-6" />
                             Add First Role
                           </button>
                         </div>
@@ -1117,7 +1117,7 @@ const ToolProjectArchitect: React.FC = () => {
                     <>
                       {resources.map((res, resIdx) => (
                         <tr key={res.id} className="border-b border-gray-100 hover:bg-blue-50 group">
-                          <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold w-80 min-w-[320px]">
+                          <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold w-60 min-w-[240px] group-hover:w-80 group-hover:min-w-[320px] transition-all duration-300">
                             <div className="flex items-center h-full w-full overflow-hidden">
                               {/* Reorder Handles */}
                               <div className="flex flex-col border-r border-gray-200 bg-gray-50 shrink-0">
@@ -1141,18 +1141,18 @@ const ToolProjectArchitect: React.FC = () => {
                               <div className="flex-grow flex items-center px-2 gap-2 min-w-0">
                                 <div className="flex flex-col flex-grow min-w-0">
                                   <input 
-                                    className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0.5 w-full text-xs font-bold"
+                                    className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0.5 w-full text-lg font-bold"
                                     value={res.name}
                                     onChange={e => updateResourceName(res.id, e.target.value)}
                                   />
                                   <div className="flex items-center gap-1 opacity-60">
-                                    <span className="text-[8px]">{displayCurrency}</span>
+                                    <span className="text-xs">{displayCurrency}</span>
                                     <input 
-                                      className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0 w-16 text-[9px] font-mono"
+                                      className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0 w-20 text-sm font-mono"
                                       value={res.monthlyCost}
                                       onChange={e => updateResourceCost(res.id, parseFloat(e.target.value) || 0)}
                                     />
-                                    <span className="text-[7px] uppercase">/ MM</span>
+                                    <span className="text-[11px] uppercase">/ MM</span>
                                   </div>
                                 </div>
                                 
@@ -1195,28 +1195,28 @@ const ToolProjectArchitect: React.FC = () => {
                       
                       {/* Summary Rows */}
                       <tr className="bg-gray-100 font-black border-t-2 border-black">
-                        <td className="sticky left-0 bg-gray-100 z-10 border-r border-black p-2 uppercase flex justify-between items-center">
+                        <td className="sticky left-0 bg-gray-100 z-10 border-r border-black p-2 uppercase flex justify-between items-center text-sm">
                           <span>Total MM</span>
                           <button 
                             onClick={addManualResource}
-                            className="text-[10px] px-2 py-1 bg-green-100 border border-green-600 text-green-700 hover:bg-green-200 rounded flex items-center gap-1"
+                            className="text-sm px-2 py-1 bg-green-100 border border-green-600 text-green-700 hover:bg-green-200 rounded flex items-center gap-1"
                           >
-                            <img src={ICONS.ADD} alt="add" className="w-3 h-3" />
+                            <img src={ICONS.ADD} alt="add" className="w-4 h-4" />
                             Add Role
                           </button>
                         </td>
                         {projectMonthsList.map((m, i) => {
                           const key = m.toISOString().slice(0, 7);
                           const sum = resources.reduce((s, r) => s + (r.allocations[key] || 0), 0);
-                          return <td key={i} className="border-r border-black text-center p-2">{sum.toFixed(1)}</td>;
+                          return <td key={i} className="border-r border-black text-center p-2 text-sm">{sum.toFixed(1)}</td>;
                         })}
                       </tr>
                       <tr className="bg-gray-50 font-black border-t border-black">
-                        <td className="sticky left-0 bg-gray-50 z-10 border-r border-black p-2 uppercase">Monthly Cost</td>
+                        <td className="sticky left-0 bg-gray-50 z-10 border-r border-black p-2 uppercase text-sm">Monthly Cost</td>
                         {projectMonthsList.map((m, i) => {
                           const key = m.toISOString().slice(0, 7);
                           const cost = resources.reduce((s, r) => s + (r.allocations[key] || 0) * r.monthlyCost, 0);
-                          return <td key={i} className="border-r border-black text-center p-2">{displayCurrency}{cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>;
+                          return <td key={i} className="border-r border-black text-center p-2 text-sm">{displayCurrency}{cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>;
                         })}
                       </tr>
                     </>
@@ -1229,24 +1229,24 @@ const ToolProjectArchitect: React.FC = () => {
             <div className="mt-6 p-6 border-4 border-black bg-[#ffffa0] shadow-[6px_6px_0px_rgba(0,0,0,1)]">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
                 <div className="border-r border-black/10 pr-4">
-                  <div className="text-[9px] font-black uppercase opacity-50 mb-1">Total Effort</div>
-                  <div className="text-2xl font-black">{totalMM.toFixed(1)} <span className="text-xs font-normal">MM</span></div>
+                  <div className="text-sm font-black uppercase opacity-50 mb-1">Total Effort</div>
+                  <div className="text-4xl font-black">{totalMM.toFixed(1)} <span className="text-sm font-normal">MM</span></div>
                 </div>
                 <div className="border-r border-black/10 pr-4">
-                  <div className="text-[9px] font-black uppercase opacity-50 mb-1">Total Cost</div>
-                  <div className="text-2xl font-black">{displayCurrency}{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-sm font-black uppercase opacity-50 mb-1">Total Cost</div>
+                  <div className="text-4xl font-black">{displayCurrency}{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div className="border-r border-black/10 pr-4">
-                  <div className="text-[9px] font-black uppercase opacity-50 mb-1">Total Profit</div>
-                  <div className="text-2xl font-black">{displayCurrency}{(totalCost * (margin / 100)).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-sm font-black uppercase opacity-50 mb-1">Total Profit</div>
+                  <div className="text-4xl font-black">{displayCurrency}{(totalCost * (margin / 100)).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-black uppercase opacity-50 mb-1">Total Budget</div>
-                  <div className="text-2xl font-black text-blue-900">{displayCurrency}{(totalCost * (1 + margin / 100)).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-sm font-black uppercase opacity-50 mb-1">Total Budget</div>
+                  <div className="text-4xl font-black text-blue-900">{displayCurrency}{(totalCost * (1 + margin / 100)).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
               </div>
-              <RetroButton onClick={handleExportExcel} className="w-full py-4 text-xl font-black uppercase shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 flex items-center justify-center gap-3">
-                <img src={ICONS.SAVE} alt="export" className="w-6 h-6" />
+              <RetroButton onClick={handleExportExcel} className="w-full py-4 text-3xl font-black uppercase shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 flex items-center justify-center gap-3">
+                <img src={ICONS.SAVE} alt="export" className="w-8 h-8" />
                 EXPORT PROJECTION (.XLSX)
               </RetroButton>
             </div>
