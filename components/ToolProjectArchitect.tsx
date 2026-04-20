@@ -735,8 +735,58 @@ const ToolProjectArchitect: React.FC = () => {
   }, [backlog]);
 
   const applyAISuggestion = useCallback(() => {
-    redistributeWorkload('all');
-  }, [backlog, milestones, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName, selfCost]);
+    if (backlog.length === 0 || milestones.length === 0) {
+      return;
+    }
+
+    const newResources: Resource[] = [];
+    const uniqueDisciplines = Array.from(new Set(
+      backlog
+        .map(item => (item.discipline?.trim() || ''))
+        .filter(d => d !== '')
+    ));
+
+    if (uniqueDisciplines.length === 0) {
+      uniqueDisciplines.push('General');
+    }
+
+    uniqueDisciplines.forEach((discName, idx) => {
+      const canonicalName = getCanonicalDisciplineName(discName);
+      const discInfo = GAME_DEV_DISCIPLINES.find(d => d.name === canonicalName) || { name: canonicalName, defaultCost: selfCost || 1000 };
+
+      const allocations: Record<string, number> = {};
+      let monthOffset = 0;
+
+      milestones.forEach(ms => {
+        const discTasks = backlog.filter(item => 
+          item.milestoneId === ms.id &&
+          getCanonicalDisciplineName(item.discipline || '') === canonicalName
+        );
+
+        const totalEffortInUnit = discTasks.reduce((sum, item) => sum + item.effort, 0);
+        const requiredMM = totalEffortInUnit * currentUnit.ratioToMonth * (1 + inefficiency / 100);
+        
+        const msDuration = Math.max(1, ms.duration);
+        const requiredHeadcount = Math.ceil(requiredMM / msDuration);
+
+        const msMonths = projectMonthsList.slice(monthOffset, monthOffset + msDuration);
+        msMonths.forEach(d => {
+          const key = d.toISOString().slice(0, 7);
+          allocations[key] = requiredHeadcount;
+        });
+        monthOffset += msDuration;
+      });
+
+      newResources.push({
+        id: `res-${canonicalName.replace(/[^a-zA-Z0-9]/g, '_')}-${idx}-${Date.now()}`,
+        name: `${discInfo.name}`,
+        monthlyCost: discInfo.defaultCost,
+        allocations
+      });
+    });
+
+    setResources(newResources);
+  }, [backlog, milestones, selfCost, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName]);
 
   useEffect(() => {
     if (isAutoSync && backlog.length > 0) {
