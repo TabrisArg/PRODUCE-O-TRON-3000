@@ -267,6 +267,45 @@ const ToolProjectArchitect: React.FC = () => {
   const [fillTargetKeys, setFillTargetKeys] = useState<string[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
   const [isRedistributeOpen, setIsRedistributeOpen] = useState(false);
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+
+  const pushToUndo = useCallback(() => {
+    const snapshot = JSON.parse(JSON.stringify({
+      backlog,
+      milestones,
+      resources,
+      startDate,
+      effortUnit,
+      currency,
+      customCurrency,
+      inefficiency,
+      marginStr,
+      contingencyStr,
+      selfCostStr,
+      isAutoSync,
+    }));
+    setUndoStack(prev => [snapshot, ...prev].slice(0, 50));
+  }, [backlog, milestones, resources, startDate, effortUnit, currency, customCurrency, inefficiency, marginStr, contingencyStr, selfCostStr, isAutoSync]);
+
+  const undo = () => {
+    if (undoStack.length === 0) return;
+    const [lastState, ...rest] = undoStack;
+    
+    setBacklog(lastState.backlog);
+    setMilestones(lastState.milestones);
+    setResources(lastState.resources);
+    setStartDate(lastState.startDate);
+    setEffortUnit(lastState.effortUnit);
+    setCurrency(lastState.currency);
+    setCustomCurrency(lastState.customCurrency);
+    setInefficiency(lastState.inefficiency);
+    setMarginStr(lastState.marginStr);
+    setContingencyStr(lastState.contingencyStr);
+    setSelfCostStr(lastState.selfCostStr);
+    setIsAutoSync(lastState.isAutoSync);
+    
+    setUndoStack(rest);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -282,6 +321,7 @@ const ToolProjectArchitect: React.FC = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
+      pushToUndo();
       setResources((items) => {
         const oldIndex = items.findIndex((i) => i.id === active.id);
         const newIndex = items.findIndex((i) => i.id === over?.id);
@@ -292,6 +332,7 @@ const ToolProjectArchitect: React.FC = () => {
 
   const handleMouseUp = useCallback(() => {
     if (fillSource && fillTargetKeys.length > 0) {
+      pushToUndo();
       setResources(prev => prev.map(r => {
         if (r.id === fillSource.resId) {
           const newAllocations = { ...r.allocations };
@@ -514,6 +555,7 @@ const ToolProjectArchitect: React.FC = () => {
   };
 
   const handleBacklogUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    pushToUndo();
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -677,6 +719,7 @@ const ToolProjectArchitect: React.FC = () => {
     if (backlog.length === 0 || milestones.length === 0) {
       return;
     }
+    pushToUndo();
 
     const totalDuration = milestones.reduce((sum, m) => sum + m.duration, 0);
     if (totalDuration === 0) return;
@@ -738,6 +781,7 @@ const ToolProjectArchitect: React.FC = () => {
     if (backlog.length === 0 || milestones.length === 0) {
       return;
     }
+    pushToUndo();
 
     const newResources: Resource[] = [];
     const uniqueDisciplines = Array.from(new Set(
@@ -809,12 +853,14 @@ const ToolProjectArchitect: React.FC = () => {
 
   // --- Logic: Manual Edits ---
   const updateAllocation = (resId: string, monthKey: string, val: number) => {
+    pushToUndo();
     setResources(prev => prev.map(r => 
       r.id === resId ? { ...r, allocations: { ...r.allocations, [monthKey]: val } } : r
     ));
   };
 
   const addManualResource = () => {
+    pushToUndo();
     const newId = `res-manual-${Date.now()}`;
     const allocations: Record<string, number> = {};
     projectMonthsList.forEach(m => {
@@ -830,12 +876,14 @@ const ToolProjectArchitect: React.FC = () => {
   };
 
   const deleteResource = (id: string) => {
+    pushToUndo();
     setResources(prev => prev.filter(r => r.id !== id));
   };
 
   const duplicateResource = (id: string) => {
     const source = resources.find(r => r.id === id);
     if (!source) return;
+    pushToUndo();
 
     const sourceIndex = resources.findIndex(r => r.id === id);
     const newId = `res-dup-${Date.now()}`;
@@ -862,14 +910,17 @@ const ToolProjectArchitect: React.FC = () => {
   };
 
   const updateResourceName = (id: string, name: string) => {
+    pushToUndo();
     setResources(prev => prev.map(r => r.id === id ? { ...r, name } : r));
   };
 
   const updateResourceCost = (id: string, monthlyCost: number) => {
+    pushToUndo();
     setResources(prev => prev.map(r => r.id === id ? { ...r, monthlyCost } : r));
   };
 
   const addMilestone = () => {
+    pushToUndo();
     const newId = `ms-${Date.now()}`;
     setMilestones(prev => [...prev, {
       id: newId,
@@ -881,6 +932,7 @@ const ToolProjectArchitect: React.FC = () => {
 
   const deleteMilestone = (id: string) => {
     if (milestones.length <= 1) return;
+    pushToUndo();
     setMilestones(prev => prev.filter(m => m.id !== id));
   };
 
@@ -890,6 +942,7 @@ const ToolProjectArchitect: React.FC = () => {
     if (direction === 'up' && index === 0) return;
     if (direction === 'down' && index === milestones.length - 1) return;
 
+    pushToUndo();
     const newMilestones = [...milestones];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     [newMilestones[index], newMilestones[targetIndex]] = [newMilestones[targetIndex], newMilestones[index]];
@@ -897,6 +950,7 @@ const ToolProjectArchitect: React.FC = () => {
   };
 
   const updateMilestone = (id: string, updates: Partial<Milestone>) => {
+    pushToUndo();
     setMilestones(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
   };
 
@@ -1067,7 +1121,17 @@ const ToolProjectArchitect: React.FC = () => {
         </h1>
         <div className="flex gap-4">
           <RetroButton 
+            onClick={undo}
+            disabled={undoStack.length === 0}
+            className={`text-[10px] py-1 px-4 border border-black flex items-center gap-1 ${undoStack.length === 0 ? 'opacity-50 cursor-not-allowed grayscale' : 'bg-blue-100 hover:bg-blue-200'}`}
+          >
+            <span className="text-xl">↩️</span>
+            Undo ({undoStack.length})
+          </RetroButton>
+
+          <RetroButton 
             onClick={() => {
+              pushToUndo();
               setBacklog([]);
               setMilestones([]);
               setResources([]);
@@ -1133,12 +1197,12 @@ const ToolProjectArchitect: React.FC = () => {
             
             <div>
               <label className="block text-[10px] font-bold uppercase mb-1">Start Date</label>
-              <input type="date" className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <input type="date" className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" value={startDate} onChange={e => { pushToUndo(); setStartDate(e.target.value); }} />
             </div>
 
             <div>
               <label className="block text-[10px] font-bold uppercase mb-1">Effort Unit</label>
-              <select className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" value={effortUnit} onChange={e => setEffortUnit(e.target.value)}>
+              <select className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" value={effortUnit} onChange={e => { pushToUndo(); setEffortUnit(e.target.value); }}>
                 {EFFORT_UNITS.map(u => <option key={u.id} value={u.id}>{u.label}</option>)}
               </select>
             </div>
@@ -1149,7 +1213,7 @@ const ToolProjectArchitect: React.FC = () => {
                 {CURRENCIES.map(c => (
                   <button
                     key={c.label}
-                    onClick={() => { setCurrency(c.symbol); setCustomCurrency(''); }}
+                    onClick={() => { pushToUndo(); setCurrency(c.symbol); setCustomCurrency(''); }}
                     className={`px-3 py-2 text-lg font-bold border ${currency === c.symbol && !customCurrency ? 'bg-blue-600 text-white border-blue-700' : 'win95-bg border-gray-600 hover:bg-gray-100'}`}
                   >
                     {c.symbol}
@@ -1161,18 +1225,18 @@ const ToolProjectArchitect: React.FC = () => {
                 placeholder="Custom (e.g. kr, R$)" 
                 className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" 
                 value={customCurrency} 
-                onChange={e => setCustomCurrency(e.target.value)} 
+                onChange={e => { pushToUndo(); setCustomCurrency(e.target.value); }} 
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[10px] font-bold uppercase mb-1">Margin %</label>
-                <input type="text" className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" value={marginStr} onChange={e => setMarginStr(e.target.value)} />
+                <input type="text" className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" value={marginStr} onChange={e => { pushToUndo(); setMarginStr(e.target.value); }} />
               </div>
               <div>
                 <label className="block text-[10px] font-bold uppercase mb-1">Buffer %</label>
-                <input type="text" className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" value={contingencyStr} onChange={e => setContingencyStr(e.target.value)} />
+                <input type="text" className="w-full p-1 retro-inset bg-white text-xs border border-gray-400" value={contingencyStr} onChange={e => { pushToUndo(); setContingencyStr(e.target.value); }} />
               </div>
             </div>
 
@@ -1186,7 +1250,7 @@ const ToolProjectArchitect: React.FC = () => {
                   step="5"
                   className="flex-grow" 
                   value={inefficiency} 
-                  onChange={e => setInefficiency(parseInt(e.target.value))} 
+                  onChange={e => { pushToUndo(); setInefficiency(parseInt(e.target.value)); }} 
                 />
                 <span className="text-xs font-mono w-8">{inefficiency}%</span>
               </div>
@@ -1197,9 +1261,9 @@ const ToolProjectArchitect: React.FC = () => {
               <div className="col-span-2">
                 <label className="block text-[10px] font-bold uppercase mb-1">Self Cost (per MM)</label>
                 <div className="flex gap-1">
-                  <input type="text" className="flex-grow p-1 retro-inset bg-white text-xs border border-gray-400" value={selfCostStr} onChange={e => setSelfCostStr(e.target.value)} />
+                  <input type="text" className="flex-grow p-1 retro-inset bg-white text-xs border border-gray-400" value={selfCostStr} onChange={e => { pushToUndo(); setSelfCostStr(e.target.value); }} />
                   <button 
-                    onClick={() => setResources(prev => prev.map(r => ({ ...r, monthlyCost: selfCost })))}
+                    onClick={() => { pushToUndo(); setResources(prev => prev.map(r => ({ ...r, monthlyCost: selfCost }))); }}
                     className="px-2 py-1 win95-bg border border-gray-600 text-[8px] font-bold uppercase hover:bg-gray-100 active:bg-gray-200"
                     title="Apply to all roles"
                   >
@@ -1210,7 +1274,7 @@ const ToolProjectArchitect: React.FC = () => {
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={isAutoSync} onChange={e => setIsAutoSync(e.target.checked)} className="w-4 h-4" />
+              <input type="checkbox" checked={isAutoSync} onChange={e => { pushToUndo(); setIsAutoSync(e.target.checked); }} className="w-4 h-4" />
               <span className="text-[10px] font-bold uppercase">Auto-Sync Resources</span>
             </label>
           </div>
