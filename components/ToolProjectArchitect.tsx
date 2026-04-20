@@ -283,9 +283,10 @@ const ToolProjectArchitect: React.FC = () => {
       contingencyStr,
       selfCostStr,
       isAutoSync,
+      dismissedAlerts,
     }));
     setUndoStack(prev => [snapshot, ...prev].slice(0, 50));
-  }, [backlog, milestones, resources, startDate, effortUnit, currency, customCurrency, inefficiency, marginStr, contingencyStr, selfCostStr, isAutoSync]);
+  }, [backlog, milestones, resources, startDate, effortUnit, currency, customCurrency, inefficiency, marginStr, contingencyStr, selfCostStr, isAutoSync, dismissedAlerts]);
 
   const undo = () => {
     if (undoStack.length === 0) return;
@@ -303,6 +304,7 @@ const ToolProjectArchitect: React.FC = () => {
     setContingencyStr(lastState.contingencyStr);
     setSelfCostStr(lastState.selfCostStr);
     setIsAutoSync(lastState.isAutoSync);
+    setDismissedAlerts(lastState.dismissedAlerts || {});
     
     setUndoStack(rest);
   };
@@ -467,6 +469,7 @@ const ToolProjectArchitect: React.FC = () => {
   }, [backlog, milestones, resources, inefficiency, currentUnit, getWorkloadStatus, getCanonicalDisciplineName, dismissedAlerts]);
 
   const spreadWorkload = (disciplineName: string, milestoneId: string) => {
+    pushToUndo();
     const canonicalName = getCanonicalDisciplineName(disciplineName);
     const status = getWorkloadStatus(milestoneId, disciplineName);
     const targetMilestone = milestones.find(m => m.id === milestoneId);
@@ -1123,7 +1126,7 @@ const ToolProjectArchitect: React.FC = () => {
           <RetroButton 
             onClick={undo}
             disabled={undoStack.length === 0}
-            className={`text-[10px] py-1 px-4 border border-black flex items-center gap-1 ${undoStack.length === 0 ? 'opacity-50 cursor-not-allowed grayscale' : 'bg-blue-100 hover:bg-blue-200'}`}
+            className="text-[10px] py-1 px-4 border border-black flex items-center gap-1 bg-blue-100 hover:bg-blue-200"
           >
             <span className="text-xl">↩️</span>
             Undo ({undoStack.length})
@@ -1422,7 +1425,7 @@ const ToolProjectArchitect: React.FC = () => {
                       <div className="flex items-center gap-1 shrink-0">
                         {alert.isCompensatable ? (
                           <button 
-                            onClick={() => setDismissedAlerts(prev => ({ ...prev, [`${alert.milestoneId}-${alert.discipline}`]: true }))}
+                            onClick={() => { pushToUndo(); setDismissedAlerts(prev => ({ ...prev, [`${alert.milestoneId}-${alert.discipline}`]: true })); }}
                             className="text-[10px] px-2 py-1 win95-bg border border-blue-600 text-blue-700 font-bold uppercase hover:bg-blue-50 flex items-center gap-1"
                             title="Total project capacity covers this overload"
                           >
