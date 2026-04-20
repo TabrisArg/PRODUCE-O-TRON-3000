@@ -266,6 +266,7 @@ const ToolProjectArchitect: React.FC = () => {
   const [fillSource, setFillSource] = useState<{ resId: string, monthKey: string, value: number } | null>(null);
   const [fillTargetKeys, setFillTargetKeys] = useState<string[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
+  const [isRedistributeOpen, setIsRedistributeOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -672,66 +673,70 @@ const ToolProjectArchitect: React.FC = () => {
   };
 
   // --- Logic: Resource Suggestion ---
-  const applyAISuggestion = useCallback(() => {
+  const redistributeWorkload = (targetDiscipline: string | 'all') => {
     if (backlog.length === 0 || milestones.length === 0) {
-      console.log("Auto-suggestion skipped: backlog or milestones empty", { backlogLen: backlog.length, msLen: milestones.length });
       return;
     }
 
-    const newResources: Resource[] = [];
+    const totalDuration = milestones.reduce((sum, m) => sum + m.duration, 0);
+    if (totalDuration === 0) return;
+
+    const disciplinesToProcess = targetDiscipline === 'all' 
+      ? Array.from(new Set(backlog.map(i => i.discipline?.trim() || '').filter(d => d !== '')))
+      : [targetDiscipline];
+
+    if (disciplinesToProcess.length === 0 && targetDiscipline === 'all') {
+      disciplinesToProcess.push('General');
+    }
+
+    setResources(prev => {
+      let newList = [...prev];
+      
+      disciplinesToProcess.forEach(discName => {
+        const canonicalName = getCanonicalDisciplineName(discName);
+        const discTasks = backlog.filter(item => getCanonicalDisciplineName(item.discipline || '') === canonicalName);
+        
+        const totalEffortInUnit = discTasks.reduce((sum, item) => sum + item.effort, 0);
+        const totalRequiredMM = totalEffortInUnit * currentUnit.ratioToMonth * (1 + inefficiency / 100);
+        const avgHeadcount = Math.ceil(totalRequiredMM / totalDuration) || 1;
+
+        const existingIdx = newList.findIndex(r => getCanonicalDisciplineName(r.name) === canonicalName);
+        
+        const allocations: Record<string, number> = {};
+        projectMonthsList.forEach(m => {
+          allocations[m.toISOString().slice(0, 7)] = avgHeadcount;
+        });
+
+        if (existingIdx !== -1) {
+          newList[existingIdx] = { ...newList[existingIdx], allocations };
+        } else {
+          const discInfo = GAME_DEV_DISCIPLINES.find(d => d.name === canonicalName) || { name: canonicalName, defaultCost: selfCost || 1000 };
+          newList.unshift({
+            id: `res-redist-${Date.now()}-${discName}`,
+            name: canonicalName,
+            monthlyCost: discInfo.defaultCost,
+            allocations
+          });
+        }
+      });
+      
+      return newList;
+    });
     
-    // Identify unique disciplines in the backlog, filtering out empty ones
-    const uniqueDisciplines = Array.from(new Set(
+    setIsRedistributeOpen(false);
+  };
+
+  const backlogDisciplines = useMemo(() => {
+    return Array.from(new Set(
       backlog
         .map(item => (item.discipline?.trim() || ''))
         .filter(d => d !== '')
-    ));
+    )).sort();
+  }, [backlog]);
 
-    if (uniqueDisciplines.length === 0) {
-      uniqueDisciplines.push('General');
-    }
-
-    uniqueDisciplines.forEach((discName, idx) => {
-      const canonicalName = getCanonicalDisciplineName(discName);
-      const discInfo = GAME_DEV_DISCIPLINES.find(d => d.name === canonicalName) || { name: canonicalName, defaultCost: selfCost || 1000 };
-
-      const allocations: Record<string, number> = {};
-      let monthOffset = 0;
-
-      milestones.forEach(ms => {
-        const discTasks = backlog.filter(item => 
-          item.milestoneId === ms.id &&
-          getCanonicalDisciplineName(item.discipline || '') === canonicalName
-        );
-
-        const totalEffortInUnit = discTasks.reduce((sum, item) => sum + item.effort, 0);
-        const requiredMM = totalEffortInUnit * currentUnit.ratioToMonth * (1 + inefficiency / 100);
-        
-        // Ensure we don't divide by zero
-        const msDuration = Math.max(1, ms.duration);
-        const requiredHeadcount = requiredMM / msDuration;
-
-        // Round up to nearest integer
-        const val = Math.ceil(requiredHeadcount);
-
-        const msMonths = projectMonthsList.slice(monthOffset, monthOffset + msDuration);
-        msMonths.forEach(d => {
-          const key = d.toISOString().slice(0, 7);
-          allocations[key] = val;
-        });
-        monthOffset += msDuration;
-      });
-
-      newResources.push({
-        id: `res-${canonicalName.replace(/[^a-zA-Z0-9]/g, '_')}-${idx}`,
-        name: `${discInfo.name}`,
-        monthlyCost: discInfo.defaultCost,
-        allocations
-      });
-    });
-
-    setResources(newResources);
-  }, [backlog, milestones, selfCost, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName]);
+  const applyAISuggestion = useCallback(() => {
+    redistributeWorkload('all');
+  }, [backlog, milestones, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName, selfCost]);
 
   useEffect(() => {
     if (isAutoSync && backlog.length > 0) {
@@ -744,10 +749,13 @@ const ToolProjectArchitect: React.FC = () => {
       if (openColorPickerId && !(e.target as HTMLElement).closest('.color-picker-container')) {
         setOpenColorPickerId(null);
       }
+      if (isRedistributeOpen && !(e.target as HTMLElement).closest('.redistribute-container')) {
+        setIsRedistributeOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openColorPickerId]);
+  }, [openColorPickerId, isRedistributeOpen]);
 
   // --- Logic: Manual Edits ---
   const updateAllocation = (resId: string, monthKey: string, val: number) => {
@@ -763,12 +771,12 @@ const ToolProjectArchitect: React.FC = () => {
       allocations[m.toISOString().slice(0, 7)] = 0;
     });
     
-    setResources(prev => [...prev, {
+    setResources(prev => [{
       id: newId,
       name: "New Role",
       monthlyCost: selfCost || 1000,
       allocations
-    }]);
+    }, ...prev]);
   };
 
   const deleteResource = (id: string) => {
@@ -1256,12 +1264,35 @@ const ToolProjectArchitect: React.FC = () => {
                   </div>
                 )}
               </div>
-              <RetroButton onClick={applyAISuggestion} className="text-sm py-1 px-4 border border-black bg-white hover:bg-gray-100">
-                <span className="flex items-center gap-2">
-                  <img src={ICONS.RECALCULATE} alt="recalc" className="w-6 h-6" />
-                  Re-calculate Headcount
-                </span>
-              </RetroButton>
+              <div className="relative redistribute-container">
+                <RetroButton onClick={() => setIsRedistributeOpen(!isRedistributeOpen)} className="text-sm py-1 px-4 border border-black bg-white hover:bg-gray-100">
+                  <span className="flex items-center gap-2">
+                    <img src={ICONS.RECALCULATE} alt="recalc" className="w-6 h-6" />
+                    Redistribute
+                  </span>
+                </RetroButton>
+
+                {isRedistributeOpen && (
+                  <div className="absolute top-full right-0 mt-1 z-50 win95-bg border-2 border-gray-400 shadow-[2px_2px_0px_rgba(0,0,0,1)] p-1 min-w-[150px] max-h-[300px] overflow-auto">
+                    <button 
+                      onClick={() => redistributeWorkload('all')}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-800 hover:text-white text-sm font-bold border border-transparent hover:border-white"
+                    >
+                      ALL
+                    </button>
+                    <div className="border-t border-gray-400 my-1" />
+                    {backlogDisciplines.map(d => (
+                      <button 
+                        key={d}
+                        onClick={() => redistributeWorkload(d)}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-800 hover:text-white text-sm border border-transparent hover:border-white"
+                      >
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {workloadAlerts.length > 0 && (
