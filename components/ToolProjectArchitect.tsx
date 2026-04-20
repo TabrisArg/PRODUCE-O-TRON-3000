@@ -265,6 +265,7 @@ const ToolProjectArchitect: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [fillSource, setFillSource] = useState<{ resId: string, monthKey: string, value: number } | null>(null);
   const [fillTargetKeys, setFillTargetKeys] = useState<string[]>([]);
+  const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -382,11 +383,31 @@ const ToolProjectArchitect: React.FC = () => {
 
   const workloadAlerts = useMemo(() => {
     if (backlog.length === 0 || milestones.length === 0) return [];
-    const alerts: { milestoneId: string, milestoneName: string, discipline: string, required: number, allocated: number }[] = [];
+    const alerts: { milestoneId: string, milestoneName: string, discipline: string, required: number, allocated: number, isCompensatable: boolean }[] = [];
     const uniqueDisciplines = Array.from(new Set(backlog.map(i => i.discipline?.trim() || '').filter(d => d !== '')));
     
     uniqueDisciplines.forEach(disc => {
+      // 1. Project-wide stats for this discipline to check compensatability
+      const canonicalName = getCanonicalDisciplineName(disc);
+      const discTasks = backlog.filter(item => getCanonicalDisciplineName(item.discipline || '') === canonicalName);
+      const projectRequiredMM = discTasks.reduce((sum, item) => sum + item.effort, 0) * currentUnit.ratioToMonth * (1 + inefficiency / 100);
+      
+      const matchingResources = resources.filter(r => {
+        const resCanonical = getCanonicalDisciplineName(r.name);
+        return resCanonical === canonicalName || r.name.toLowerCase().includes(canonicalName.toLowerCase());
+      });
+      
+      const projectAllocatedMM = matchingResources.reduce((sum, r) => {
+        return sum + Object.values(r.allocations).reduce((s, val) => s + val, 0);
+      }, 0);
+
+      const isCompensatable = projectAllocatedMM >= projectRequiredMM - 0.05;
+
+      // 2. Milestone specific alerts
       milestones.forEach(ms => {
+        const alertKey = `${ms.id}-${disc}`;
+        if (dismissedAlerts[alertKey]) return;
+
         const status = getWorkloadStatus(ms.id, disc);
         if (status.isOverloaded) {
           alerts.push({
@@ -394,13 +415,14 @@ const ToolProjectArchitect: React.FC = () => {
             milestoneName: ms.name,
             discipline: disc,
             required: status.requiredMM,
-            allocated: status.allocatedMM
+            allocated: status.allocatedMM,
+            isCompensatable
           });
         }
       });
     });
     return alerts;
-  }, [backlog, milestones, resources, inefficiency, currentUnit, getWorkloadStatus]);
+  }, [backlog, milestones, resources, inefficiency, currentUnit, getWorkloadStatus, getCanonicalDisciplineName, dismissedAlerts]);
 
   const spreadWorkload = (disciplineName: string, milestoneId: string) => {
     const canonicalName = getCanonicalDisciplineName(disciplineName);
@@ -1144,47 +1166,65 @@ const ToolProjectArchitect: React.FC = () => {
               </h3>
               
               <div className="space-y-4 text-sm">
-                {/* Core Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
-                    <div className="text-[10px] font-black uppercase opacity-50 mb-1 leading-none">Total Duration</div>
-                    <div className="text-2xl font-black">
-                      {milestones.reduce((sum, m) => sum + m.duration, 0)} 
-                      <span className="text-xs ml-1 font-bold lowercase">{effortUnit}</span>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
-                    <div className="text-[10px] font-black uppercase opacity-50 mb-1 leading-none">Total Milestones</div>
-                    <div className="text-2xl font-black">{milestones.length}</div>
-                  </div>
-                </div>
+                {/* Peak Stats */}
+                {(() => {
+                  const monthKeys = projectMonthsList.map(m => m.toISOString().slice(0, 7));
+                  let peakTotal = 0;
+                  monthKeys.forEach(key => {
+                    const monthSum = resources.reduce((sum, r) => sum + (r.allocations[key] || 0), 0);
+                    if (monthSum > peakTotal) peakTotal = monthSum;
+                  });
 
-                {/* Team Composition */}
+                  return (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
+                        <div className="text-[10px] font-black uppercase opacity-50 mb-1 leading-none">Peak Headcount</div>
+                        <div className="text-2xl font-black">{peakTotal.toFixed(1)}</div>
+                      </div>
+                      <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
+                        <div className="text-[10px] font-black uppercase opacity-50 mb-1 leading-none">Total Duration</div>
+                        <div className="text-2xl font-black">
+                          {milestones.reduce((sum, m) => sum + m.duration, 0)} 
+                          <span className="text-xs ml-1 font-bold lowercase">{effortUnit}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Team Peak Breakdown */}
                 <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
-                  <div className="text-[10px] font-black uppercase opacity-50 mb-2 leading-none">Team Composition</div>
-                  <div className="space-y-2 max-h-[180px] overflow-auto pr-2">
+                  <div className="text-[10px] font-black uppercase opacity-50 mb-2 leading-none">Peak Headcount by Discipline</div>
+                  <div className="space-y-2 max-h-[220px] overflow-auto pr-2">
                     {(() => {
-                      const breakdown: Record<string, number> = {};
+                      const monthKeys = projectMonthsList.map(m => m.toISOString().slice(0, 7));
+                      const resourcesByDisc: Record<string, Resource[]> = {};
+                      
                       resources.forEach(r => {
                         const canon = getCanonicalDisciplineName(r.name);
-                        breakdown[canon] = (breakdown[canon] || 0) + 1;
+                        if (!resourcesByDisc[canon]) resourcesByDisc[canon] = [];
+                        resourcesByDisc[canon].push(r);
                       });
-                      const entries = Object.entries(breakdown).sort((a,b) => b[1] - a[1]);
-                      if (entries.length === 0) return <div className="text-xs italic opacity-50">No resources allocated yet.</div>;
+
+                      const peakEntries = Object.entries(resourcesByDisc).map(([name, rList]) => {
+                        let maxVal = 0;
+                        monthKeys.forEach(key => {
+                          const mSum = rList.reduce((s, r) => s + (r.allocations[key] || 0), 0);
+                          if (mSum > maxVal) maxVal = mSum;
+                        });
+                        return { name, peak: maxVal };
+                      }).sort((a,b) => b.peak - a.peak);
+
+                      if (peakEntries.length === 0) return <div className="text-xs italic opacity-50">No resources allocated yet.</div>;
                       
-                      return entries.map(([name, count]) => (
+                      return peakEntries.map(({ name, peak }) => (
                         <div key={name} className="flex justify-between items-end border-b border-gray-200 pb-1">
                           <span className="font-bold text-xs truncate max-w-[140px] uppercase">{name}</span>
-                          <span className="text-xs font-mono bg-blue-100 px-1.5 rounded">{count} {count === 1 ? 'Role' : 'Roles'}</span>
+                          <span className="text-xs font-mono bg-blue-100 px-1.5 rounded">{peak.toFixed(1)} <span className="text-[10px]">Peak</span></span>
                         </div>
                       ));
                     })()}
                   </div>
-                </div>
-
-                {/* Call to Action */}
-                <div className="text-[10px] italic opacity-60 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                  💡 Use the <strong>Apply AI Logic</strong> button below the backlog to automatically calculate these values.
                 </div>
               </div>
             </div>
@@ -1234,12 +1274,24 @@ const ToolProjectArchitect: React.FC = () => {
                         <span className="font-black text-red-600">[{alert.milestoneName}]</span> {alert.discipline}: 
                         <span className="ml-1 font-mono">{alert.allocated.toFixed(1)}/{alert.required.toFixed(1)} MM</span>
                       </div>
-                      <button 
-                        onClick={() => spreadWorkload(alert.discipline, alert.milestoneId)}
-                        className="text-xs px-2 py-1 bg-red-600 text-white font-black uppercase hover:bg-red-700 rounded shadow-sm"
-                      >
-                        Spread Workload
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {alert.isCompensatable ? (
+                          <button 
+                            onClick={() => setDismissedAlerts(prev => ({ ...prev, [`${alert.milestoneId}-${alert.discipline}`]: true }))}
+                            className="text-[10px] px-2 py-1 win95-bg border border-blue-600 text-blue-700 font-bold uppercase hover:bg-blue-50 flex items-center gap-1"
+                            title="Total project capacity covers this overload"
+                          >
+                            <span className="text-sm">⚖️</span> Compensate
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => spreadWorkload(alert.discipline, alert.milestoneId)}
+                            className="text-[10px] px-2 py-1 bg-red-600 text-white font-black uppercase hover:bg-red-700 rounded shadow-sm"
+                          >
+                            Add Support
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
