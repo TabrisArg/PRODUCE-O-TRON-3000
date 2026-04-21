@@ -883,9 +883,16 @@ const ToolProjectArchitect: React.FC = () => {
   };
 
   const handleTimelinePaste = (startResId: string, startMonthKey: string, text: string) => {
-    // Excel/Sheets paste data as TSV (tab separated)
-    const rows = text.split(/\r?\n/).filter(r => r.trim().length > 0 || r === "").map(r => r.split('\t'));
-    if (rows.length === 0) return;
+    // Excel/Sheets paste data as TSV (tab separated). 
+    // We trim trailing newlines to avoid creating an empty row at the end.
+    const trimmedText = text.replace(/[\r\n]+$/, '');
+    if (!trimmedText && text.length > 0) {
+      // If it was only newlines, we should probably still not process
+      return;
+    }
+    if (!text) return;
+
+    const rows = trimmedText.split(/\r?\n/).map(r => r.split('\t'));
 
     pushToUndo();
 
