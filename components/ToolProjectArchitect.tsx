@@ -182,7 +182,7 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
       style={style} 
       className={`border-b border-gray-100 hover:bg-blue-50 group ${isDragging ? 'bg-blue-100 shadow-lg' : ''}`}
     >
-      <td className="sticky left-0 bg-white z-10 border-r border-black p-0 font-bold w-80 min-w-[320px] transition-all duration-300">
+      <td className="sticky left-0 bg-white z-20 border-r border-black p-0 font-bold w-80 min-w-[320px] transition-all duration-300">
         <div className="flex items-center h-full w-full overflow-hidden">
           {/* Windows 95 Style Drag Handle */}
           <div 
@@ -335,19 +335,6 @@ const ToolProjectArchitect: React.FC = () => {
   const [isSelecting, setIsSelecting] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (topScrollRef.current && topScrollRef.current !== e.target) {
-      topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    }
-  };
-
-  const handleTopScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (scrollRef.current && scrollRef.current !== e.target) {
-      scrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    }
-  };
 
   const pushToUndo = useCallback(() => {
     // We capture the state INSIDE setUndoStack to ensure we are using the stable values from the closure
@@ -1776,30 +1763,16 @@ const ToolProjectArchitect: React.FC = () => {
               </div>
             )}
 
-            <div className="relative flex-grow flex flex-col min-h-0 bg-white border border-gray-400 retro-inset overflow-hidden">
-              {/* Top Horizontal Scrollbar (Mirrors bottom) */}
-              <div 
-                ref={topScrollRef}
-                onScroll={handleTopScroll}
-                className="overflow-x-scroll overflow-y-hidden h-4 bg-gray-200 border-b border-gray-400 sticky top-0 z-40 scroll-smooth"
-              >
-                <div style={{ width: (320 + projectMonthsList.length * 80) + 'px' }} className="h-px" />
-              </div>
-
-              <div 
-                ref={scrollRef}
-                onScroll={handleScroll}
-                className="flex-grow overflow-x-scroll overflow-y-auto h-[600px] max-h-[calc(100vh-350px)] relative"
-              >
-                <DndContext 
+            <div className="flex-grow retro-inset bg-white overflow-x-scroll overflow-y-auto border border-gray-400 relative h-[600px] max-h-[calc(100vh-350px)]">
+              <DndContext 
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
                 <table className="w-full text-base font-mono border-collapse min-w-[1000px]">
-                  <thead className="sticky top-0 z-20 bg-gray-200 shadow-sm">
+                  <thead className="sticky top-0 z-30 bg-gray-200 shadow-sm">
                   <tr>
-                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black w-80 min-w-[320px] p-2 transition-all duration-300">
+                    <th className="sticky left-0 bg-gray-200 z-50 border-r border-black w-80 min-w-[320px] p-2 transition-all duration-300">
                       <button 
                         onClick={addMilestone}
                         className="w-full text-sm py-1 bg-blue-50 border border-blue-600 text-blue-700 hover:bg-blue-100 rounded uppercase font-black shadow-sm active:shadow-none active:translate-y-0.5 flex items-center justify-center gap-1"
@@ -1936,7 +1909,7 @@ const ToolProjectArchitect: React.FC = () => {
                     ))}
                   </tr>
                   <tr className="h-10 border-t border-black">
-                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black p-2 uppercase text-xs">
+                    <th className="sticky left-0 bg-gray-200 z-50 border-r border-black p-2 uppercase text-xs">
                       <div className="flex justify-between items-center w-full">
                         <span>Resource</span>
                         <button 
@@ -2007,7 +1980,7 @@ const ToolProjectArchitect: React.FC = () => {
                      
                       {/* Summary Rows */}
                       <tr className="bg-gray-100 font-black border-t-2 border-black">
-                        <td className="sticky left-0 bg-gray-100 z-10 border-r border-black p-2 uppercase text-sm">
+                        <td className="sticky left-0 bg-gray-100 z-20 border-r border-black p-2 uppercase text-sm">
                           Total MM
                         </td>
                         {projectMonthsList.map((m, i) => {
@@ -2016,8 +1989,8 @@ const ToolProjectArchitect: React.FC = () => {
                           return <td key={i} className="border-r border-black text-center p-2 text-sm">{sum.toFixed(1)}</td>;
                         })}
                       </tr>
-                      <tr className="bg-gray-50 font-black border-t border-black">
-                        <td className="sticky left-0 bg-gray-50 z-10 border-r border-black p-2 uppercase text-sm">Monthly Cost</td>
+                      <tr className="bg-gray-50 font-black border-t border-black text-black">
+                        <td className="sticky left-0 bg-gray-50 z-20 border-r border-black p-2 uppercase text-sm">Monthly Cost</td>
                         {projectMonthsList.map((m, i) => {
                           const key = m.toISOString().slice(0, 7);
                           const cost = resources.reduce((s, r) => s + (r.allocations[key] || 0) * r.monthlyCost, 0);
@@ -2030,7 +2003,6 @@ const ToolProjectArchitect: React.FC = () => {
               </table>
             </DndContext>
           </div>
-        </div>
 
             {/* Footer Metrics & Export */}
             <div className="mt-6 p-6 border-4 border-black bg-[#ffffa0] shadow-[6px_6px_0px_rgba(0,0,0,1)]">
