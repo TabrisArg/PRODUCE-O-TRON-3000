@@ -725,6 +725,7 @@ const ToolProjectArchitect: React.FC = () => {
       alert(err instanceof Error ? err.message : "Error parsing file.");
     } finally {
       setIsImporting(false);
+      e.target.value = '';
     }
   };
 
@@ -1148,6 +1149,10 @@ const ToolProjectArchitect: React.FC = () => {
               setBacklog([]);
               setMilestones([]);
               setResources([]);
+              setDismissedAlerts({});
+              setIsRedistributeOpen(false);
+              setFillSource(null);
+              setFillTargetKeys([]);
             }}
             className="text-[10px] py-1 px-4 border border-black bg-red-100 hover:bg-red-200 flex items-center gap-1"
           >
