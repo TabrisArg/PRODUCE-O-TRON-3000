@@ -273,14 +273,13 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
             }}
           >
             <input 
-              type="text"
+              type="number"
+              step="any"
               className={`w-full h-full p-1 text-center outline-none font-bold bg-transparent ${val > 0 ? 'text-blue-900 drop-shadow-sm' : 'text-gray-300'}`}
               value={val === 0 ? '' : val}
               placeholder="0"
-              onChange={e => {
-                const newVal = parseFloat(e.target.value.replace(',', '.')) || 0;
-                updateAllocation(res.id, key, newVal);
-              }}
+              onChange={e => updateAllocation(res.id, key, parseFloat(e.target.value) || 0)}
+              onFocus={e => e.target.select()}
               onPaste={e => {
                 const text = e.clipboardData.getData('text');
                 if (text && (text.includes('\t') || text.includes('\n'))) {
