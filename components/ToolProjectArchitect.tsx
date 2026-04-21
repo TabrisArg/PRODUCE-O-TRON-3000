@@ -523,6 +523,8 @@ const ToolProjectArchitect: React.FC = () => {
       setResources(prev => {
         const next = [...prev];
         const res = { ...next[existingIndex] };
+        // Change ID to prevent auto-sync from overwriting it later
+        res.id = `res-spread-${canonicalName.replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}`;
         const newAllocations = { ...res.allocations };
         
         let monthOffset = 0;
@@ -786,12 +788,19 @@ const ToolProjectArchitect: React.FC = () => {
           allocations[m.toISOString().slice(0, 7)] = avgHeadcount;
         });
 
+        const newId = `res-redist-${canonicalName.replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}`;
+
         if (existingIdx !== -1) {
-          newList[existingIdx] = { ...newList[existingIdx], allocations };
+          // Replace it with a redist ID so auto-sync stops touching it
+          newList[existingIdx] = { 
+            ...newList[existingIdx], 
+            id: newId, 
+            allocations 
+          };
         } else {
           const discInfo = GAME_DEV_DISCIPLINES.find(d => d.name === canonicalName) || { name: canonicalName, defaultCost: selfCost || 1000 };
           newList.unshift({
-            id: `res-redist-${Date.now()}-${discName}`,
+            id: newId,
             name: canonicalName,
             monthlyCost: discInfo.defaultCost,
             allocations
@@ -818,19 +827,19 @@ const ToolProjectArchitect: React.FC = () => {
       return;
     }
 
-    const newResources: Resource[] = [];
-    const uniqueDisciplines = Array.from(new Set(
+    // 1. Group unique disciplines by their canonical names
+    const canonicalDisciplines = Array.from(new Set(
       backlog
-        .map(item => (item.discipline?.trim() || ''))
+        .map(item => getCanonicalDisciplineName(item.discipline || ''))
         .filter(d => d !== '')
     ));
 
-    if (uniqueDisciplines.length === 0) {
-      uniqueDisciplines.push('General');
+    if (canonicalDisciplines.length === 0) {
+      canonicalDisciplines.push('General');
     }
 
-    uniqueDisciplines.forEach((discName, idx) => {
-      const canonicalName = getCanonicalDisciplineName(discName);
+    // 2. Calculate the "Backlog-Derived" resources
+    const newResources: Resource[] = canonicalDisciplines.map((canonicalName) => {
       const discInfo = GAME_DEV_DISCIPLINES.find(d => d.name === canonicalName) || { name: canonicalName, defaultCost: selfCost || 1000 };
 
       const allocations: Record<string, number> = {};
@@ -856,26 +865,60 @@ const ToolProjectArchitect: React.FC = () => {
         monthOffset += msDuration;
       });
 
-      newResources.push({
-        id: `res-${canonicalName.replace(/[^a-zA-Z0-9]/g, '_')}-${idx}`,
+      return {
+        id: `res-auto-${canonicalName.replace(/[^a-zA-Z0-9]/g, '_')}`,
         name: `${discInfo.name}`,
         monthlyCost: discInfo.defaultCost,
         allocations
-      });
+      };
     });
 
     setResources(prev => {
-      // 1. Keep resources that are manual, duplicated, or redistributed
-      // These are identified by their IDs
-      const preserved = prev.filter(r => 
-        r.id.startsWith('res-manual-') || 
-        r.id.startsWith('res-dup-') || 
-        r.id.startsWith('res-redist-') ||
-        r.id.startsWith('res-spread-')
-      );
+      // 1. If prev is empty, this is the first import. Use backlog order.
+      if (prev.length === 0) return newResources;
 
-      // 2. Return the new calculated ones + preserved custom ones
-      return [...newResources, ...preserved];
+      // 2. Create map of calculated resources by their canonical name for easier matching
+      const newResourcesByCanonical = new Map(
+        newResources.map(r => [getCanonicalDisciplineName(r.name), r])
+      );
+      const handledCanonicalNames = new Set<string>();
+
+      // 3. Update existing resources while maintaining current order
+      const updatedPrev = prev.map(r => {
+        const canonical = getCanonicalDisciplineName(r.name);
+        const calculatedMatch = newResourcesByCanonical.get(canonical);
+
+        if (calculatedMatch) {
+          handledCanonicalNames.add(canonical);
+          // If it's the auto-sync row, update its allocations
+          if (r.id.startsWith('res-auto-')) {
+            return {
+              ...r,
+              allocations: calculatedMatch.allocations
+            };
+          }
+          // If it's a manual/redist row, we don't overwrite its allocations (it's user controlled)
+          // but we've marked this discipline as "handled" so no new auto-row is added.
+        }
+        return r;
+      });
+
+      // 4. Remove auto-sync resources that are no longer in the backlog
+      const filteredPrev = updatedPrev.filter(r => {
+        if (r.id.startsWith('res-auto-')) {
+          const canonical = getCanonicalDisciplineName(r.name);
+          return newResourcesByCanonical.has(canonical);
+        }
+        return true;
+      });
+
+      // 5. Add any completely new auto-synced disciplines to the bottom of the list
+      const brandNew = newResources.filter(r => {
+        const canonical = getCanonicalDisciplineName(r.name);
+        return !handledCanonicalNames.has(canonical);
+      });
+      
+      return [...filteredPrev, ...brandNew];
     });
   }, [backlog, milestones, selfCost, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName]);
 
