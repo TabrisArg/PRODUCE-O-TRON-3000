@@ -845,14 +845,26 @@ const ToolProjectArchitect: React.FC = () => {
       });
 
       newResources.push({
-        id: `res-${canonicalName.replace(/[^a-zA-Z0-9]/g, '_')}-${idx}-${Date.now()}`,
+        id: `res-${canonicalName.replace(/[^a-zA-Z0-9]/g, '_')}-${idx}`,
         name: `${discInfo.name}`,
         monthlyCost: discInfo.defaultCost,
         allocations
       });
     });
 
-    setResources(newResources);
+    setResources(prev => {
+      // 1. Keep resources that are manual, duplicated, or redistributed
+      // These are identified by their IDs
+      const preserved = prev.filter(r => 
+        r.id.startsWith('res-manual-') || 
+        r.id.startsWith('res-dup-') || 
+        r.id.startsWith('res-redist-') ||
+        r.id.startsWith('res-spread-')
+      );
+
+      // 2. Return the new calculated ones + preserved custom ones
+      return [...newResources, ...preserved];
+    });
   }, [backlog, milestones, selfCost, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName]);
 
   useEffect(() => {
