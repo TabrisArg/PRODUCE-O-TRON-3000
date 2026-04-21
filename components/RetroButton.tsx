@@ -17,10 +17,10 @@ const RetroButton: React.FC<RetroButtonProps> = ({ children, onClick, className 
       disabled={disabled}
       title={title}
       className={`
-        px-4 py-1 win95-bg text-black active:retro-inset
+        px-4 py-1 text-black active:retro-inset
         transition-all transform active:translate-y-0.5
         ${active ? 'retro-inset shadow-inner' : 'retro-beveled'}
-        ${disabled ? 'opacity-50 grayscale cursor-not-allowed pointer-events-none' : ''}
+        ${disabled ? 'bg-[#909090] text-gray-700 opacity-60 grayscale cursor-not-allowed pointer-events-none' : 'win95-bg hover:brightness-110 active:brightness-90'}
         ${className}
       `}
     >

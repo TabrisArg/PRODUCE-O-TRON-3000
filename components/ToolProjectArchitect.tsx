@@ -270,7 +270,9 @@ const ToolProjectArchitect: React.FC = () => {
   const [undoStack, setUndoStack] = useState<any[]>([]);
 
   const pushToUndo = useCallback(() => {
-    const snapshot = JSON.parse(JSON.stringify({
+    // We capture the state INSIDE setUndoStack to ensure we are using the stable values from the closure
+    // but the comparison ensures we don't push the exact same state twice.
+    const snapshot = {
       backlog,
       milestones,
       resources,
@@ -284,8 +286,17 @@ const ToolProjectArchitect: React.FC = () => {
       selfCostStr,
       isAutoSync,
       dismissedAlerts,
-    }));
-    setUndoStack(prev => [snapshot, ...prev].slice(0, 50));
+    };
+    
+    const snapshotStr = JSON.stringify(snapshot);
+
+    setUndoStack(prev => {
+      if (prev.length > 0) {
+        const lastSnapshotStr = JSON.stringify(prev[0]);
+        if (snapshotStr === lastSnapshotStr) return prev;
+      }
+      return [JSON.parse(snapshotStr), ...prev].slice(0, 50);
+    });
   }, [backlog, milestones, resources, startDate, effortUnit, currency, customCurrency, inefficiency, marginStr, contingencyStr, selfCostStr, isAutoSync, dismissedAlerts]);
 
   const undo = () => {
@@ -784,7 +795,6 @@ const ToolProjectArchitect: React.FC = () => {
     if (backlog.length === 0 || milestones.length === 0) {
       return;
     }
-    pushToUndo();
 
     const newResources: Resource[] = [];
     const uniqueDisciplines = Array.from(new Set(
@@ -1126,7 +1136,7 @@ const ToolProjectArchitect: React.FC = () => {
           <RetroButton 
             onClick={undo}
             disabled={undoStack.length === 0}
-            className="text-[10px] py-1 px-4 border border-black flex items-center gap-1 bg-blue-100 hover:bg-blue-200"
+            className={`text-[10px] py-1 px-4 border border-black flex items-center gap-1 ${undoStack.length === 0 ? '' : 'bg-blue-100'}`}
           >
             <span className="text-xl">↩️</span>
             Undo ({undoStack.length})
