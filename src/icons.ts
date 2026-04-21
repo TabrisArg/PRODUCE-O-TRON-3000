@@ -12,7 +12,7 @@ export const ICONS = {
   SUGGEST: "https://i.ibb.co/1YgRKcjF/plus.png",
   ADD_PHASE: "https://i.ibb.co/1YgRKcjF/plus.png",
   ADD_ROLE: "https://i.ibb.co/1YgRKcjF/plus.png",
-  SAVE: "https://i.ibb.co/6V8NQF7/download.gif",
+  SAVE: "https://i.ibb.co/5X6f8VMy/save.gif",
   EXPORT: "https://i.ibb.co/6V8NQF7/download.gif",
   IMPORT: "https://i.ibb.co/21WggkJK/folder.gif",
   CLOSE: "https://i.ibb.co/whL54wRD/trash.png",

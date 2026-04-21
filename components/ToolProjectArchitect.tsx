@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -101,6 +101,10 @@ interface SortableResourceRowProps {
   setFillTargetKeys: (keys: string[] | ((prev: string[]) => string[])) => void;
   isNewlyCreated: boolean;
   onFocusHandled: () => void;
+  selectedRange: { resId: string, monthKeys: string[] } | null;
+  onSelectionUpdate: (range: { resId: string, monthKeys: string[] } | null) => void;
+  isSelecting: boolean;
+  setIsSelecting: (v: boolean) => void;
 }
 
 const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
@@ -120,6 +124,10 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
   setFillTargetKeys,
   isNewlyCreated,
   onFocusHandled,
+  selectedRange,
+  onSelectionUpdate,
+  isSelecting,
+  setIsSelecting,
 }) => {
   const {
     attributes,
@@ -145,6 +153,27 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
     transition,
     zIndex: isDragging ? 50 : 'auto',
     position: 'relative' as const,
+  };
+
+  const handleCellMouseDown = (monthKey: string) => {
+    setIsSelecting(true);
+    onSelectionUpdate({ resId: res.id, monthKeys: [monthKey] });
+  };
+
+  const handleCellMouseEnter = (monthKey: string) => {
+    if (!isSelecting || !selectedRange || selectedRange.resId !== res.id) return;
+    
+    // Create range between first selected and this one
+    const startIdx = projectMonthsList.findIndex(m => m.toISOString().slice(0, 7) === selectedRange.monthKeys[0]);
+    const currentIdx = projectMonthsList.findIndex(m => m.toISOString().slice(0, 7) === monthKey);
+    
+    if (startIdx === -1 || currentIdx === -1) return;
+    
+    const min = Math.min(startIdx, currentIdx);
+    const max = Math.max(startIdx, currentIdx);
+    const newKeys = projectMonthsList.slice(min, max + 1).map(m => m.toISOString().slice(0, 7));
+    
+    onSelectionUpdate({ resId: res.id, monthKeys: newKeys });
   };
 
   return (
@@ -216,13 +245,23 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
         const key = m.toISOString().slice(0, 7);
         const val = res.allocations[key] || 0;
         const isFilling = fillSource?.resId === res.id && fillTargetKeys.includes(key);
-        const bgColor = isFilling ? 'bg-blue-600/30' : getAllocationColor(val);
+        const isSelected = selectedRange?.resId === res.id && selectedRange.monthKeys.includes(key);
+        const bgColor = isFilling ? 'bg-blue-600/30' : isSelected ? 'bg-yellow-200' : getAllocationColor(val);
         
         return (
           <td 
             key={i} 
-            className={`border-r border-gray-100 p-0 relative group/cell transition-colors duration-200 ${bgColor}`}
+            className={`border-r border-gray-100 p-0 relative group/cell transition-colors duration-200 ${bgColor} ${isSelected ? 'ring-2 ring-yellow-500 z-10' : ''}`}
+            onMouseDown={(e) => {
+              // Only trigger if not clicking the fill handle or if right button?
+              // Let's say if we click the cell itself but not input? 
+              // Actually, better to catch on the td.
+              if (e.button === 0) {
+                handleCellMouseDown(key);
+              }
+            }}
             onMouseEnter={() => {
+              handleCellMouseEnter(key);
               if (fillSource && fillSource.resId === res.id) {
                 const sourceIdx = projectMonthsList.findIndex(pm => pm.toISOString().slice(0, 7) === fillSource.monthKey);
                 const currentIdx = i;
@@ -234,12 +273,14 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
             }}
           >
             <input 
-              type="number"
-              step="any"
+              type="text"
               className={`w-full h-full p-1 text-center outline-none font-bold bg-transparent ${val > 0 ? 'text-blue-900 drop-shadow-sm' : 'text-gray-300'}`}
               value={val === 0 ? '' : val}
               placeholder="0"
-              onChange={e => updateAllocation(res.id, key, parseFloat(e.target.value) || 0)}
+              onChange={e => {
+                const newVal = parseFloat(e.target.value.replace(',', '.')) || 0;
+                updateAllocation(res.id, key, newVal);
+              }}
               onPaste={e => {
                 const text = e.clipboardData.getData('text');
                 if (text && (text.includes('\t') || text.includes('\n'))) {
@@ -253,6 +294,7 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
               className="absolute bottom-0 right-0 w-2 h-2 bg-blue-600 cursor-crosshair z-20 opacity-0 group-hover/cell:opacity-100 shadow-[0_0_2px_white]"
               onMouseDown={(e) => {
                 e.preventDefault();
+                e.stopPropagation(); // Prevent selection start
                 setFillSource({ resId: res.id, monthKey: key, value: val });
                 setFillTargetKeys([key]);
               }}
@@ -289,6 +331,23 @@ const ToolProjectArchitect: React.FC = () => {
   const [isRedistributeOpen, setIsRedistributeOpen] = useState(false);
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [newlyCreatedId, setNewlyCreatedId] = useState<string | null>(null);
+  const [selectedRange, setSelectedRange] = useState<{ resId: string, monthKeys: string[] } | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (topScrollRef.current && topScrollRef.current !== e.target) {
+      topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
+  const handleTopScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (scrollRef.current && scrollRef.current !== e.target) {
+      scrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
 
   const pushToUndo = useCallback(() => {
     // We capture the state INSIDE setUndoStack to ensure we are using the stable values from the closure
@@ -380,6 +439,7 @@ const ToolProjectArchitect: React.FC = () => {
     }
     setFillSource(null);
     setFillTargetKeys([]);
+    setIsSelecting(false);
   }, [fillSource, fillTargetKeys]);
 
   useEffect(() => {
@@ -594,6 +654,38 @@ const ToolProjectArchitect: React.FC = () => {
   const handleBacklogUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.name.endsWith('.json')) {
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        try {
+          const data = JSON.parse(re.target?.result as string);
+          if (data.resources && data.milestones) {
+            setBacklog(data.backlog || []);
+            setMilestones(data.milestones || []);
+            setResources(data.resources || []);
+            setStartDate(data.startDate || new Date().toISOString().slice(0, 10));
+            setEffortUnit(data.effortUnit || 'MONTHS');
+            setCurrency(data.currency || '€');
+            setCustomCurrency(data.customCurrency || '');
+            setInefficiency(data.inefficiency || 0);
+            setMarginStr(data.marginStr || "0");
+            setContingencyStr(data.contingencyStr || "0");
+            setSelfCostStr(data.selfCostStr || "1000");
+            setIsAutoSync(data.isAutoSync !== undefined ? data.isAutoSync : true);
+            setUndoStack([]);
+            alert("Working file loaded successfully.");
+          } else {
+            alert("Invalid working file format.");
+          }
+        } catch (err) {
+          alert("Error parsing working file.");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+      return;
+    }
 
     setIsImporting(true);
     try {
@@ -936,6 +1028,9 @@ const ToolProjectArchitect: React.FC = () => {
       if (isRedistributeOpen && !(e.target as HTMLElement).closest('.redistribute-container')) {
         setIsRedistributeOpen(false);
       }
+      if (selectedRange && !(e.target as HTMLElement).closest('td.relative')) {
+        setSelectedRange(null);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -989,6 +1084,47 @@ const ToolProjectArchitect: React.FC = () => {
       });
       return next;
     });
+  };
+
+  const handleDistribute = () => {
+    if (!selectedRange || selectedRange.monthKeys.length === 0) return;
+
+    const totalToDistributeStr = prompt("Enter total amount to distribute over selected period:", "1.0");
+    if (totalToDistributeStr === null || totalToDistributeStr === "") return;
+    const total = parseFloat(totalToDistributeStr.replace(',', '.'));
+    if (isNaN(total)) {
+      alert("Invalid number");
+      return;
+    }
+
+    pushToUndo();
+    const count = selectedRange.monthKeys.length;
+    const baseValue = Math.floor(total / count);
+    const remainder = total % count;
+
+    setResources(prev => prev.map(res => {
+      if (res.id !== selectedRange.resId) return res;
+      
+      const newAllocations = { ...res.allocations };
+      selectedRange.monthKeys.forEach((key, idx) => {
+        const isLast = idx === count - 1;
+        newAllocations[key] = isLast ? Number((baseValue + remainder).toFixed(2)) : Number(baseValue.toFixed(2));
+      });
+
+      // Stable ID transformation: only change if it's an auto row that needs to become manual
+      let newId = res.id;
+      if (res.id.startsWith('res-auto-')) {
+        // We use the canonical name to keep it linked but stop auto-sync
+        newId = `res-manual-${getCanonicalDisciplineName(res.name).replace(/\s/g, '_')}`;
+        // Ensure uniqueness
+        if (prev.some(p => p.id === newId && p.id !== res.id)) {
+          newId = `${newId}-${Date.now()}`;
+        }
+      }
+
+      return { ...res, id: newId, allocations: newAllocations };
+    }));
+    setSelectedRange(null);
   };
 
   const addManualResource = () => {
@@ -1232,6 +1368,30 @@ const ToolProjectArchitect: React.FC = () => {
     a.click();
   };
 
+  const handleExportWorkingFile = () => {
+    const data = {
+      backlog,
+      milestones,
+      resources,
+      startDate,
+      effortUnit,
+      currency,
+      customCurrency,
+      inefficiency,
+      marginStr,
+      contingencyStr,
+      selfCostStr,
+      isAutoSync,
+      version: "5.0"
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Project_Architect_Working_File_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+  };
+
   // --- Calculations for UI ---
   const totalMM = useMemo(() => {
     return resources.reduce((sum, res) => {
@@ -1264,6 +1424,17 @@ const ToolProjectArchitect: React.FC = () => {
             Undo ({undoStack.length})
           </RetroButton>
 
+          {selectedRange && (
+            <RetroButton 
+              onClick={handleDistribute}
+              className="text-[10px] py-1 px-4 border border-black bg-yellow-400 hover:bg-yellow-500 flex items-center gap-1 shadow-lg"
+              title="Distribute value over selected cells"
+            >
+              <img src={ICONS.SUGGEST} alt="distribute" className="w-5 h-5" />
+              DISTRIBUTE
+            </RetroButton>
+          )}
+
           <RetroButton 
             onClick={() => {
               pushToUndo();
@@ -1280,6 +1451,7 @@ const ToolProjectArchitect: React.FC = () => {
             <img src={ICONS.TRASH} alt="clear" className="w-12 h-12" />
             Clear Data
           </RetroButton>
+
           <div className="win95-bg p-2 retro-inset border border-black shadow-sm text-[10px] font-mono">
             <span className="block opacity-50 uppercase font-sans font-bold">Total MM</span>
             {totalMM.toFixed(1)}
@@ -1305,6 +1477,28 @@ const ToolProjectArchitect: React.FC = () => {
                 COLLAPSE
               </button>
             </div>
+          <div className="win95-bg p-4 retro-beveled border-2 border-gray-400">
+            <h3 className="font-black text-xs uppercase mb-3 border-b border-gray-400 pb-1 italic text-blue-700">Resume Session</h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <input type="file" accept=".json" className="hidden" id="working-file-upload" onChange={handleBacklogUpload} />
+                <label htmlFor="working-file-upload" className="flex flex-col items-center justify-center py-2 win95-bg retro-beveled cursor-pointer text-[10px] font-black border-2 border-blue-400 hover:bg-blue-50 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 gap-1 text-center h-full">
+                  <img src={ICONS.CALENDAR} alt="restore" className="w-6 h-6" />
+                  LOAD FILE
+                </label>
+                
+                <button 
+                  onClick={handleExportWorkingFile}
+                  className="flex flex-col items-center justify-center py-2 win95-bg retro-beveled cursor-pointer text-[10px] font-black border-2 border-green-600 hover:bg-green-50 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 gap-1 text-center h-full"
+                >
+                  <img src={ICONS.SAVE} alt="save" className="w-6 h-6" />
+                  SAVE PROGRESS
+                </button>
+              </div>
+              <p className="text-[9px] opacity-60 leading-tight">Save/Load your project progress as a JSON file to keep working later.</p>
+            </div>
+          </div>
+
           {/* Step 1: Import */}
           <div className="win95-bg p-4 retro-beveled border-2 border-gray-400">
             <h3 className="font-black text-xs uppercase mb-3 border-b border-gray-400 pb-1">1. Import Backlog</h3>
@@ -1582,12 +1776,26 @@ const ToolProjectArchitect: React.FC = () => {
               </div>
             )}
 
-            <div className="flex-grow retro-inset bg-white overflow-x-scroll overflow-y-auto border border-gray-400 relative">
-              <DndContext 
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
+            <div className="relative flex-grow flex flex-col min-h-0 bg-white border border-gray-400 retro-inset overflow-hidden">
+              {/* Top Horizontal Scrollbar (Mirrors bottom) */}
+              <div 
+                ref={topScrollRef}
+                onScroll={handleTopScroll}
+                className="overflow-x-scroll overflow-y-hidden h-4 bg-gray-200 border-b border-gray-400 sticky top-0 z-40 scroll-smooth"
               >
+                <div style={{ width: (320 + projectMonthsList.length * 80) + 'px' }} className="h-px" />
+              </div>
+
+              <div 
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className="flex-grow overflow-x-scroll overflow-y-auto h-[600px] max-h-[calc(100vh-350px)] relative"
+              >
+                <DndContext 
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
                 <table className="w-full text-base font-mono border-collapse min-w-[1000px]">
                   <thead className="sticky top-0 z-20 bg-gray-200 shadow-sm">
                   <tr>
@@ -1728,7 +1936,19 @@ const ToolProjectArchitect: React.FC = () => {
                     ))}
                   </tr>
                   <tr className="h-10 border-t border-black">
-                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black p-2 text-left uppercase text-xs">Resource</th>
+                    <th className="sticky left-0 bg-gray-200 z-30 border-r border-black p-2 uppercase text-xs">
+                      <div className="flex justify-between items-center w-full">
+                        <span>Resource</span>
+                        <button 
+                          onClick={addManualResource}
+                          className="text-[10px] px-2 py-0.5 bg-green-100 border border-green-600 text-green-700 hover:bg-green-200 rounded flex items-center gap-1 transition-all active:scale-95 shadow-sm"
+                          title="Add Manual Resource"
+                        >
+                          <img src={ICONS.ADD} alt="add" className="w-3 h-3" />
+                          Add Role
+                        </button>
+                      </div>
+                    </th>
                     {projectMonthsList.map((m, i) => (
                       <th key={i} className="border-r border-black p-1 text-xs text-center whitespace-nowrap min-w-[80px]">
                         M{i+1}<br/>{m.toLocaleString('default', { month: 'short' })}
@@ -1777,21 +1997,18 @@ const ToolProjectArchitect: React.FC = () => {
                           setFillTargetKeys={setFillTargetKeys}
                           isNewlyCreated={newlyCreatedId === res.id}
                           onFocusHandled={() => setNewlyCreatedId(null)}
+                          selectedRange={selectedRange}
+                          onSelectionUpdate={setSelectedRange}
+                          isSelecting={isSelecting}
+                          setIsSelecting={setIsSelecting}
                         />
                       ))}
                     </SortableContext>
                      
                       {/* Summary Rows */}
                       <tr className="bg-gray-100 font-black border-t-2 border-black">
-                        <td className="sticky left-0 bg-gray-100 z-10 border-r border-black p-2 uppercase flex justify-between items-center text-sm">
-                          <span>Total MM</span>
-                          <button 
-                            onClick={addManualResource}
-                            className="text-sm px-2 py-1 bg-green-100 border border-green-600 text-green-700 hover:bg-green-200 rounded flex items-center gap-1"
-                          >
-                            <img src={ICONS.ADD} alt="add" className="w-4 h-4" />
-                            Add Role
-                          </button>
+                        <td className="sticky left-0 bg-gray-100 z-10 border-r border-black p-2 uppercase text-sm">
+                          Total MM
                         </td>
                         {projectMonthsList.map((m, i) => {
                           const key = m.toISOString().slice(0, 7);
@@ -1813,6 +2030,7 @@ const ToolProjectArchitect: React.FC = () => {
               </table>
             </DndContext>
           </div>
+        </div>
 
             {/* Footer Metrics & Export */}
             <div className="mt-6 p-6 border-4 border-black bg-[#ffffa0] shadow-[6px_6px_0px_rgba(0,0,0,1)]">
