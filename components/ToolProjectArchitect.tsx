@@ -165,7 +165,7 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
           <div className="flex-grow flex items-center px-2 gap-2 min-w-0">
             <div className="flex flex-col flex-grow min-w-0">
               <input 
-                className="bg-transparent border-none outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0.5 w-full text-lg font-bold"
+                className={`outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0.5 w-full text-lg font-bold transition-colors ${res.name === "New Role" ? 'bg-yellow-200 ring-2 ring-yellow-500 rounded animate-pulse' : 'bg-transparent border-none'}`}
                 value={res.name}
                 onChange={e => updateResourceName(res.id, e.target.value)}
               />
@@ -569,7 +569,6 @@ const ToolProjectArchitect: React.FC = () => {
   };
 
   const handleBacklogUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    pushToUndo();
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -704,6 +703,7 @@ const ToolProjectArchitect: React.FC = () => {
 
       // 3. Update State
       setBacklog(newBacklog);
+      setUndoStack([]);
       
       const finalPhases = extractedPhases.length > 0 
         ? extractedPhases 
