@@ -94,6 +94,7 @@ interface SortableResourceRowProps {
   duplicateResource: (id: string) => void;
   deleteResource: (id: string) => void;
   updateAllocation: (resId: string, monthKey: string, val: number) => void;
+  onPasteAllocation: (startResId: string, startMonthKey: string, text: string) => void;
   fillSource: { resId: string, monthKey: string, value: number } | null;
   setFillSource: (source: { resId: string, monthKey: string, value: number } | null) => void;
   fillTargetKeys: string[];
@@ -110,6 +111,7 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
   duplicateResource,
   deleteResource,
   updateAllocation,
+  onPasteAllocation,
   fillSource,
   setFillSource,
   fillTargetKeys,
@@ -227,6 +229,13 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
               value={val === 0 ? '' : val}
               placeholder="0"
               onChange={e => updateAllocation(res.id, key, parseFloat(e.target.value) || 0)}
+              onPaste={e => {
+                const text = e.clipboardData.getData('text');
+                if (text && (text.includes('\t') || text.includes('\n'))) {
+                  e.preventDefault();
+                  onPasteAllocation(res.id, key, text);
+                }
+              }}
             />
             {/* Excel Fill Handle */}
             <div 
@@ -871,6 +880,41 @@ const ToolProjectArchitect: React.FC = () => {
     setResources(prev => prev.map(r => 
       r.id === resId ? { ...r, allocations: { ...r.allocations, [monthKey]: val } } : r
     ));
+  };
+
+  const handleTimelinePaste = (startResId: string, startMonthKey: string, text: string) => {
+    // Excel/Sheets paste data as TSV (tab separated)
+    const rows = text.split(/\r?\n/).filter(r => r.trim().length > 0 || r === "").map(r => r.split('\t'));
+    if (rows.length === 0) return;
+
+    pushToUndo();
+
+    setResources(prev => {
+      const next = [...prev];
+      const startResIdx = next.findIndex(r => r.id === startResId);
+      const startMonthIdx = projectMonthsList.findIndex(m => m.toISOString().slice(0, 7) === startMonthKey);
+
+      if (startResIdx === -1 || startMonthIdx === -1) return prev;
+
+      rows.forEach((row, rowOffset) => {
+        const resIdx = startResIdx + rowOffset;
+        if (resIdx < next.length) {
+          const res = { ...next[resIdx], allocations: { ...next[resIdx].allocations } };
+          row.forEach((cellVal, colOffset) => {
+            const monthIdx = startMonthIdx + colOffset;
+            if (monthIdx < projectMonthsList.length) {
+              const monthKey = projectMonthsList[monthIdx].toISOString().slice(0, 7);
+              // Clean value (remove spaces, swap commas for dots if needed)
+              const cleanVal = cellVal.trim().replace(/\s/g, '').replace(',', '.');
+              const numVal = parseFloat(cleanVal) || 0;
+              res.allocations[monthKey] = numVal;
+            }
+          });
+          next[resIdx] = res;
+        }
+      });
+      return next;
+    });
   };
 
   const addManualResource = () => {
@@ -1642,6 +1686,7 @@ const ToolProjectArchitect: React.FC = () => {
                           duplicateResource={duplicateResource}
                           deleteResource={deleteResource}
                           updateAllocation={updateAllocation}
+                          onPasteAllocation={handleTimelinePaste}
                           fillSource={fillSource}
                           setFillSource={setFillSource}
                           fillTargetKeys={fillTargetKeys}
