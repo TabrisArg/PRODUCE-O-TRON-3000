@@ -99,6 +99,8 @@ interface SortableResourceRowProps {
   setFillSource: (source: { resId: string, monthKey: string, value: number } | null) => void;
   fillTargetKeys: string[];
   setFillTargetKeys: (keys: string[] | ((prev: string[]) => string[])) => void;
+  isNewlyCreated: boolean;
+  onFocusHandled: () => void;
 }
 
 const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
@@ -116,6 +118,8 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
   setFillSource,
   fillTargetKeys,
   setFillTargetKeys,
+  isNewlyCreated,
+  onFocusHandled,
 }) => {
   const {
     attributes,
@@ -167,6 +171,13 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
           <div className="flex-grow flex items-center px-2 gap-2 min-w-0">
             <div className="flex flex-col flex-grow min-w-0">
               <input 
+                ref={(el) => {
+                  if (el && isNewlyCreated) {
+                    el.focus();
+                    el.select();
+                    onFocusHandled();
+                  }
+                }}
                 className={`outline-none focus:bg-white focus:ring-1 focus:ring-blue-400 p-0.5 w-full text-lg font-bold transition-colors ${res.name === "New Role" ? 'bg-yellow-200 ring-2 ring-yellow-500 rounded animate-pulse' : 'bg-transparent border-none'}`}
                 value={res.name}
                 onChange={e => updateResourceName(res.id, e.target.value)}
@@ -277,6 +288,7 @@ const ToolProjectArchitect: React.FC = () => {
   const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
   const [isRedistributeOpen, setIsRedistributeOpen] = useState(false);
   const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [newlyCreatedId, setNewlyCreatedId] = useState<string | null>(null);
 
   const pushToUndo = useCallback(() => {
     // We capture the state INSIDE setUndoStack to ensure we are using the stable values from the closure
@@ -950,6 +962,7 @@ const ToolProjectArchitect: React.FC = () => {
       monthlyCost: selfCost || 1000,
       allocations
     }, ...prev]);
+    setNewlyCreatedId(newId);
   };
 
   const deleteResource = (id: string) => {
@@ -984,6 +997,7 @@ const ToolProjectArchitect: React.FC = () => {
     const newResources = [...resources];
     newResources.splice(sourceIndex + 1, 0, duplicate);
     setResources(newResources);
+    setNewlyCreatedId(newId);
   };
 
   const updateResourceName = (id: string, name: string) => {
@@ -1005,6 +1019,7 @@ const ToolProjectArchitect: React.FC = () => {
       duration: 1,
       color: MILESTONE_COLORS[prev.length % MILESTONE_COLORS.length]
     }]);
+    setNewlyCreatedId(newId);
   };
 
   const deleteMilestone = (id: string) => {
@@ -1560,6 +1575,13 @@ const ToolProjectArchitect: React.FC = () => {
                               <img src={ICONS.MOVE_LEFT} alt="left" className="w-4 h-4" />
                             </button>
                             <input 
+                              ref={(el) => {
+                                if (el && newlyCreatedId === ms.id) {
+                                  el.focus();
+                                  el.select();
+                                  setNewlyCreatedId(null);
+                                }
+                              }}
                               className="bg-white/40 border-none text-center w-full focus:bg-white outline-none rounded px-1 py-0.5 text-sm placeholder-black/30" 
                               value={ms.name} 
                               placeholder="Phase Name"
@@ -1710,6 +1732,8 @@ const ToolProjectArchitect: React.FC = () => {
                           setFillSource={setFillSource}
                           fillTargetKeys={fillTargetKeys}
                           setFillTargetKeys={setFillTargetKeys}
+                          isNewlyCreated={newlyCreatedId === res.id}
+                          onFocusHandled={() => setNewlyCreatedId(null)}
                         />
                       ))}
                     </SortableContext>
