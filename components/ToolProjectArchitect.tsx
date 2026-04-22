@@ -301,6 +301,9 @@ const SortableResourceRow: React.FC<SortableResourceRowProps> = ({
           </td>
         );
       })}
+      <td className="border-r border-black bg-gray-100 font-black text-center p-2 text-sm sticky right-0 z-10 shadow-[-1px_0px_0px_black]">
+        {Object.values(res.allocations).reduce((a, b) => a + b, 0).toFixed(1)}
+      </td>
     </tr>
   );
 };
@@ -1906,6 +1909,11 @@ const ToolProjectArchitect: React.FC = () => {
                         </div>
                       </th>
                     ))}
+                    {resources.length > 0 && (
+                      <th className="bg-gray-300 border-r border-black p-2 font-black uppercase text-[10px] sticky right-0 z-50 shadow-[-1px_0px_0px_black] min-w-[80px]">
+                        TOTAL MM
+                      </th>
+                    )}
                   </tr>
                   <tr className="h-10 border-t border-black">
                     <th className="sticky left-0 bg-gray-200 z-50 border-r border-black p-2 uppercase text-xs">
@@ -1926,6 +1934,11 @@ const ToolProjectArchitect: React.FC = () => {
                         M{i+1}<br/>{m.toLocaleString('default', { month: 'short' })}
                       </th>
                     ))}
+                    {resources.length > 0 && (
+                      <th className="bg-gray-300 border-r border-black p-2 font-black uppercase text-[10px] sticky right-0 z-50 shadow-[-1px_0px_0px_black] min-w-[80px]">
+                        SUM
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -1987,6 +2000,11 @@ const ToolProjectArchitect: React.FC = () => {
                           const sum = resources.reduce((s, r) => s + (r.allocations[key] || 0), 0);
                           return <td key={i} className="border-r border-black text-center p-2 text-sm">{sum.toFixed(1)}</td>;
                         })}
+                        {resources.length > 0 && (
+                          <td className="bg-gray-200 border-r border-black text-center p-2 text-sm font-black sticky right-0 z-10 shadow-[-1px_0px_0px_black]">
+                            {resources.reduce((total, r) => total + Object.values(r.allocations).reduce((a, b) => a + b, 0), 0).toFixed(1)}
+                          </td>
+                        )}
                       </tr>
                       <tr className="bg-gray-50 font-black border-t border-black text-black">
                         <td className="sticky left-0 bg-gray-50 z-20 border-r border-black p-2 uppercase text-sm">Monthly Cost</td>
@@ -1995,6 +2013,11 @@ const ToolProjectArchitect: React.FC = () => {
                           const cost = resources.reduce((s, r) => s + (r.allocations[key] || 0) * r.monthlyCost, 0);
                           return <td key={i} className="border-r border-black text-center p-2 text-sm">{displayCurrency}{cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>;
                         })}
+                        {resources.length > 0 && (
+                          <td className="bg-gray-200 border-r border-black text-center p-2 text-sm font-black sticky right-0 z-10 shadow-[-1px_0px_0px_black]">
+                            {displayCurrency}{resources.reduce((total, r) => total + Object.values(r.allocations).reduce((a, b) => a + b, 0) * r.monthlyCost, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </td>
+                        )}
                       </tr>
                     </>
                   )}
