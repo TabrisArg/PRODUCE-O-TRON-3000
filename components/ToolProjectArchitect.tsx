@@ -549,6 +549,16 @@ const ToolProjectArchitect: React.FC = () => {
     return alerts;
   }, [backlog, milestones, resources, inefficiency, currentUnit, getWorkloadStatus, getCanonicalDisciplineName, dismissedAlerts]);
 
+  const dismissAllAlerts = useCallback(() => {
+    pushToUndo();
+    const newDismissed = { ...dismissedAlerts };
+    workloadAlerts.forEach(alert => {
+      const key = `${alert.milestoneId}-${alert.discipline}`;
+      newDismissed[key] = true;
+    });
+    setDismissedAlerts(newDismissed);
+  }, [pushToUndo, workloadAlerts, dismissedAlerts]);
+
   const spreadWorkload = (disciplineName: string, milestoneId: string) => {
     pushToUndo();
     const canonicalName = getCanonicalDisciplineName(disciplineName);
@@ -1693,10 +1703,16 @@ const ToolProjectArchitect: React.FC = () => {
                 )}
                 <h3 className="font-black text-lg uppercase italic underline decoration-blue-500">Allocation Matrix</h3>
                 {workloadAlerts.length > 0 && (
-                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-2 py-1 rounded animate-pulse">
-                    <span className="text-sm font-black text-red-600">
+                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-2 py-1 rounded shadow-sm">
+                    <span className="text-sm font-black text-red-600 animate-pulse">
                       ⚠️ {workloadAlerts.length} OVERLOADS DETECTED
                     </span>
+                    <button 
+                      onClick={dismissAllAlerts}
+                      className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-black hover:bg-red-700 active:scale-95 transition-transform"
+                    >
+                      DISMISS ALL
+                    </button>
                   </div>
                 )}
               </div>
