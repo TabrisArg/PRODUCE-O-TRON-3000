@@ -1412,11 +1412,13 @@ const ToolProjectArchitect: React.FC = () => {
     a2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } }; // Yellow
 
     projectMonthsList.forEach((m, i) => {
-      const cell = headerRow.getCell(i + 2);
+      const colIdx = i + 2;
+      const cell = headerRow.getCell(colIdx);
       cell.value = `M${i + 1}`;
       cell.alignment = { horizontal: 'center' };
       cell.font = { bold: true };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } }; // Yellow
+      const msColor = colToMsColor[colIdx];
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lighten(msColor) } };
     });
     
     const totalHeaderCell = headerRow.getCell(totalColIdx);
@@ -1437,17 +1439,12 @@ const ToolProjectArchitect: React.FC = () => {
         const cell = row.getCell(colIdx);
         const val = res.allocations[key] || 0;
         if (val > 0) {
-          cell.value = val;
-          cell.numFmt = '0.00';
-          const msColor = colToMsColor[colIdx];
-          cell.fill = { 
-            type: 'pattern', 
-            pattern: 'solid', 
-            fgColor: { argb: lighten(msColor) } 
-          };
+          cell.value = Math.round(val);
+          cell.numFmt = '0';
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }; // Blue highlight
         } else {
           cell.value = null; // Show as empty
-          cell.numFmt = ''; // Ensure no zero formatting
+          cell.numFmt = '0'; 
         }
       });
 
@@ -1456,9 +1453,9 @@ const ToolProjectArchitect: React.FC = () => {
       const totalCell = row.getCell(totalColIdx);
       totalCell.value = { 
         formula: `SUM(${firstDataCol}${currentRow}:${lastDataCol}${currentRow})`,
-        result: Object.values(res.allocations).reduce((a, b) => a + b, 0)
+        result: Math.round(Object.values(res.allocations).reduce((a, b) => a + b, 0))
       };
-      totalCell.numFmt = '0.00';
+      totalCell.numFmt = '0';
       totalCell.font = { bold: true };
       totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
 
@@ -1483,9 +1480,9 @@ const ToolProjectArchitect: React.FC = () => {
       if (val > 0) {
         cell.value = {
           formula: `SUM(${colLetter}3:${colLetter}${summaryRowIdx - 1})`,
-          result: val
+          result: Math.round(val)
         };
-        cell.numFmt = '0.00';
+        cell.numFmt = '0';
       } else {
         cell.value = null;
       }
@@ -1499,9 +1496,9 @@ const ToolProjectArchitect: React.FC = () => {
     if (grandTotalVal > 0) {
       grandTotalCell.value = {
         formula: `SUM(${totalColLetter}3:${totalColLetter}${summaryRowIdx - 1})`,
-        result: grandTotalVal
+        result: Math.round(grandTotalVal)
       };
-      grandTotalCell.numFmt = '0.00';
+      grandTotalCell.numFmt = '0';
     } else {
       grandTotalCell.value = null;
     }
