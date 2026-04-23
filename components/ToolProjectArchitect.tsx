@@ -1331,12 +1331,31 @@ const ToolProjectArchitect: React.FC = () => {
     const thinBorder = { style: 'thin' as ExcelJS.BorderStyle };
     const mediumBorder = { style: 'medium' as ExcelJS.BorderStyle };
 
-    // Initialize all cells in the matrix area with thin borders first
+    const lighten = (hex: string) => {
+      if (!hex || hex === '#') return 'FFFFFFFF';
+      const cleanHex = hex.startsWith('#') ? hex.slice(1) : hex;
+      let r = parseInt(cleanHex.slice(0, 2), 16);
+      let g = parseInt(cleanHex.slice(2, 4), 16);
+      let b = parseInt(cleanHex.slice(4, 6), 16);
+      // Lighten significantly towards white (70%)
+      r = Math.min(255, Math.round(r + (255 - r) * 0.7));
+      g = Math.min(255, Math.round(g + (255 - g) * 0.7));
+      b = Math.min(255, Math.round(b + (255 - b) * 0.7));
+      const toHex = (num: number) => num.toString(16).padStart(2, '0').toUpperCase();
+      return `FF${toHex(r)}${toHex(g)}${toHex(b)}`;
+    };
+
+    const colToMsColor: { [col: number]: string } = {};
+
+    // Initialize borders: only name and total columns get thin internal lines initially
     for (let r = 1; r <= summaryRowIdx; r++) {
       for (let c = 1; c <= totalColIdx; c++) {
-        worksheet.getRow(r).getCell(c).border = {
-          top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder
-        };
+        const cell = worksheet.getRow(r).getCell(c);
+        if (c === 1 || c === totalColIdx) {
+          cell.border = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
+        } else {
+          cell.border = {}; // Allocation area starts borderless
+        }
       }
     }
 
@@ -1367,20 +1386,21 @@ const ToolProjectArchitect: React.FC = () => {
       cell.value = ms.name;
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
       cell.font = { bold: true };
+      const baseColor = ms.color ? ms.color.replace('#', 'FF') : 'FFCCCCCC';
       cell.fill = { 
         type: 'pattern', 
         pattern: 'solid', 
-        fgColor: { argb: ms.color.replace('#', 'FF') || 'FFCCCCCC' } 
+        fgColor: { argb: baseColor } 
       };
+      
+      for (let c = startCol; c <= endCol; c++) {
+        colToMsColor[c] = ms.color || '#CCCCCC';
+      }
+
       if (startCol !== endCol) {
         worksheet.mergeCells(1, startCol, 1, endCol);
       }
-      // Apply border to merged range
-      for (let c = startCol; c <= endCol; c++) {
-        milestoneRow.getCell(c).border = {
-          top: mediumBorder, bottom: mediumBorder, left: c === startCol ? mediumBorder : thinBorder, right: c === endCol ? mediumBorder : thinBorder
-        };
-      }
+      
       colCursor += ms.duration;
     });
 
@@ -1412,13 +1432,19 @@ const ToolProjectArchitect: React.FC = () => {
       row.getCell(1).value = res.name;
 
       projectMonthsList.forEach((m, i) => {
+        const colIdx = i + 2;
         const key = m.toISOString().slice(0, 7);
-        const cell = row.getCell(i + 2);
+        const cell = row.getCell(colIdx);
         const val = res.allocations[key] || 0;
         if (val > 0) {
           cell.value = val;
           cell.numFmt = '0.00';
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }; // Blue highlight
+          const msColor = colToMsColor[colIdx];
+          cell.fill = { 
+            type: 'pattern', 
+            pattern: 'solid', 
+            fgColor: { argb: lighten(msColor) } 
+          };
         } else {
           cell.value = null; // Show as empty
           cell.numFmt = ''; // Ensure no zero formatting
