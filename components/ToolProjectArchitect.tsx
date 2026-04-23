@@ -337,6 +337,7 @@ const ToolProjectArchitect: React.FC = () => {
   const [isSelecting, setIsSelecting] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const skipNextAutoSyncRef = useRef(false);
 
   const pushToUndo = useCallback(() => {
     // We capture the state INSIDE setUndoStack to ensure we are using the stable values from the closure
@@ -1015,6 +1016,10 @@ const ToolProjectArchitect: React.FC = () => {
 
   useEffect(() => {
     if (isAutoSync && backlog.length > 0) {
+      if (skipNextAutoSyncRef.current) {
+        skipNextAutoSyncRef.current = false;
+        return;
+      }
       applyAISuggestion();
     }
   }, [backlog, milestones, effortUnit, inefficiency, isAutoSync, applyAISuggestion]);
@@ -1038,9 +1043,13 @@ const ToolProjectArchitect: React.FC = () => {
   // --- Logic: Manual Edits ---
   const updateAllocation = (resId: string, monthKey: string, val: number) => {
     pushToUndo();
-    setResources(prev => prev.map(r => 
-      r.id === resId ? { ...r, allocations: { ...r.allocations, [monthKey]: val } } : r
-    ));
+    setResources(prev => prev.map(r => {
+      if (r.id === resId) {
+        const newId = r.id.startsWith('res-auto-') ? r.id.replace('res-auto-', 'res-manual-') : r.id;
+        return { ...r, id: newId, allocations: { ...r.allocations, [monthKey]: val } };
+      }
+      return r;
+    }));
   };
 
   const handleTimelinePaste = (startResId: string, startMonthKey: string, text: string) => {
@@ -1067,7 +1076,9 @@ const ToolProjectArchitect: React.FC = () => {
       rows.forEach((row, rowOffset) => {
         const resIdx = startResIdx + rowOffset;
         if (resIdx < next.length) {
-          const res = { ...next[resIdx], allocations: { ...next[resIdx].allocations } };
+          const currentRes = next[resIdx];
+          const newId = currentRes.id.startsWith('res-auto-') ? currentRes.id.replace('res-auto-', 'res-manual-') : currentRes.id;
+          const res = { ...currentRes, id: newId, allocations: { ...currentRes.allocations } };
           row.forEach((cellVal, colOffset) => {
             const monthIdx = startMonthIdx + colOffset;
             if (monthIdx < projectMonthsList.length) {
@@ -1180,12 +1191,24 @@ const ToolProjectArchitect: React.FC = () => {
 
   const updateResourceName = (id: string, name: string) => {
     pushToUndo();
-    setResources(prev => prev.map(r => r.id === id ? { ...r, name } : r));
+    setResources(prev => prev.map(r => {
+      if (r.id === id) {
+        const newId = r.id.startsWith('res-auto-') ? r.id.replace('res-auto-', 'res-manual-') : r.id;
+        return { ...r, id: newId, name };
+      }
+      return r;
+    }));
   };
 
   const updateResourceCost = (id: string, monthlyCost: number) => {
     pushToUndo();
-    setResources(prev => prev.map(r => r.id === id ? { ...r, monthlyCost } : r));
+    setResources(prev => prev.map(r => {
+      if (r.id === id) {
+        const newId = r.id.startsWith('res-auto-') ? r.id.replace('res-auto-', 'res-manual-') : r.id;
+        return { ...r, id: newId, monthlyCost };
+      }
+      return r;
+    }));
   };
 
   const addMilestone = () => {
@@ -1285,85 +1308,283 @@ const ToolProjectArchitect: React.FC = () => {
     a.download = `Sample_Backlog_Template.xlsx`;
     a.click();
   };
-
+ 
   // --- Logic: Export ---
   const handleExportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Project Projection');
+    const worksheet = workbook.addWorksheet('Timeline');
 
-    // 1. Headers
-    const phaseRow = worksheet.getRow(1);
-    const monthRow = worksheet.getRow(2);
-    phaseRow.getCell(1).value = "Phase";
-    monthRow.getCell(1).value = "Resource / Month";
-    monthRow.getCell(2).value = "Rate/Mo";
+    const getColLetter = (n: number) => {
+      let letter = '';
+      while (n > 0) {
+        let remainder = (n - 1) % 26;
+        letter = String.fromCharCode(65 + remainder) + letter;
+        n = Math.floor((n - 1) / 26);
+      }
+      return letter;
+    };
 
-    let colCursor = 3;
+    const totalColIdx = projectMonthsList.length + 2;
+    const ratesColIdx = totalColIdx + 2;
+    const summaryRowIdx = 3 + resources.length;
+
+    const thinBorder = { style: 'thin' as ExcelJS.BorderStyle };
+    const mediumBorder = { style: 'medium' as ExcelJS.BorderStyle };
+
+    // Initialize all cells in the matrix area with thin borders first
+    for (let r = 1; r <= summaryRowIdx; r++) {
+      for (let c = 1; c <= totalColIdx; c++) {
+        worksheet.getRow(r).getCell(c).border = {
+          top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder
+        };
+      }
+    }
+
+    // Apply medium borders to the outer matrix
+    // Top border of header row (including project architect title area)
+    for (let c = 1; c <= totalColIdx; c++) {
+      worksheet.getRow(1).getCell(c).border = { ...worksheet.getRow(1).getCell(c).border, top: mediumBorder };
+      worksheet.getRow(summaryRowIdx).getCell(c).border = { ...worksheet.getRow(summaryRowIdx).getCell(c).border, bottom: mediumBorder };
+    }
+    // Left and Right borders
+    for (let r = 1; r <= summaryRowIdx; r++) {
+      worksheet.getRow(r).getCell(1).border = { ...worksheet.getRow(r).getCell(1).border, left: mediumBorder };
+      worksheet.getRow(r).getCell(totalColIdx).border = { ...worksheet.getRow(r).getCell(totalColIdx).border, right: mediumBorder };
+    }
+
+    // 1. Milestones Row
+    const milestoneRow = worksheet.getRow(1);
+    const a1 = milestoneRow.getCell(1);
+    a1.value = "Project Architect"; 
+    a1.font = { bold: true, size: 14 };
+    a1.alignment = { vertical: 'middle' };
+
+    let colCursor = 2;
     milestones.forEach(ms => {
       const startCol = colCursor;
       const endCol = colCursor + ms.duration - 1;
-      const cell = phaseRow.getCell(startCol);
+      const cell = milestoneRow.getCell(startCol);
       cell.value = ms.name;
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ms.color } };
-      cell.alignment = { horizontal: 'center' };
-      if (startCol !== endCol) worksheet.mergeCells(1, startCol, 1, endCol);
-      
-      for (let i = 0; i < ms.duration; i++) {
-        const date = projectMonthsList[colCursor - 3 + i];
-        monthRow.getCell(colCursor + i).value = `M${colCursor - 2} (${date.toLocaleString('default', { month: 'short' })})`;
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.font = { bold: true };
+      cell.fill = { 
+        type: 'pattern', 
+        pattern: 'solid', 
+        fgColor: { argb: ms.color.replace('#', 'FF') || 'FFCCCCCC' } 
+      };
+      if (startCol !== endCol) {
+        worksheet.mergeCells(1, startCol, 1, endCol);
+      }
+      // Apply border to merged range
+      for (let c = startCol; c <= endCol; c++) {
+        milestoneRow.getCell(c).border = {
+          top: mediumBorder, bottom: mediumBorder, left: c === startCol ? mediumBorder : thinBorder, right: c === endCol ? mediumBorder : thinBorder
+        };
       }
       colCursor += ms.duration;
     });
-    monthRow.getCell(colCursor).value = "TOTAL MM";
 
-    // 2. Data Rows
-    let rowIdx = 3;
-    resources.forEach(res => {
-      const row = worksheet.getRow(rowIdx++);
+    // 2. Header Row
+    const headerRow = worksheet.getRow(2);
+    const a2 = headerRow.getCell(1);
+    a2.value = "Phase / Month";
+    a2.font = { bold: true };
+    a2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } }; // Yellow
+
+    projectMonthsList.forEach((m, i) => {
+      const cell = headerRow.getCell(i + 2);
+      cell.value = `M${i + 1}`;
+      cell.alignment = { horizontal: 'center' };
+      cell.font = { bold: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } }; // Yellow
+    });
+    
+    const totalHeaderCell = headerRow.getCell(totalColIdx);
+    totalHeaderCell.value = "TOTAL";
+    totalHeaderCell.alignment = { horizontal: 'center' };
+    totalHeaderCell.font = { bold: true };
+    totalHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
+
+    // 3. Data Rows
+    let currentRow = 3;
+    resources.forEach((res) => {
+      const row = worksheet.getRow(currentRow);
       row.getCell(1).value = res.name;
-      const rate = res.monthlyCost;
-      row.getCell(2).value = rate;
-      row.getCell(2).numFmt = `"${displayCurrency}"#,##0`;
-      
-      let totalMM = 0;
+
       projectMonthsList.forEach((m, i) => {
         const key = m.toISOString().slice(0, 7);
+        const cell = row.getCell(i + 2);
         const val = res.allocations[key] || 0;
-        totalMM += val;
-        row.getCell(i + 3).value = val;
+        if (val > 0) {
+          cell.value = val;
+          cell.numFmt = '0.00';
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }; // Blue highlight
+        } else {
+          cell.value = null; // Show as empty
+          cell.numFmt = ''; // Ensure no zero formatting
+        }
       });
-      row.getCell(colCursor).value = totalMM;
+
+      const firstDataCol = getColLetter(2);
+      const lastDataCol = getColLetter(totalColIdx - 1);
+      const totalCell = row.getCell(totalColIdx);
+      totalCell.value = { 
+        formula: `SUM(${firstDataCol}${currentRow}:${lastDataCol}${currentRow})`,
+        result: Object.values(res.allocations).reduce((a, b) => a + b, 0)
+      };
+      totalCell.numFmt = '0.00';
+      totalCell.font = { bold: true };
+      totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+
+      row.getCell(ratesColIdx).value = res.monthlyCost;
+      currentRow++;
     });
 
-    // 3. Financials
-    const totalMMRow = worksheet.getRow(rowIdx++);
-    totalMMRow.getCell(1).value = "TOTAL MM";
-    totalMMRow.font = { bold: true };
-    projectMonthsList.forEach((m, i) => {
-      const key = m.toISOString().slice(0, 7);
-      const sum = resources.reduce((s, r) => s + (r.allocations[key] || 0), 0);
-      totalMMRow.getCell(i + 3).value = sum;
+    // 4. Summary Row (Vertical divider moved inside handleExportExcel)
+    const summaryRow = worksheet.getRow(summaryRowIdx);
+    summaryRow.getCell(1).value = "Total Monthly MM";
+    summaryRow.getCell(1).font = { bold: true };
+    summaryRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+
+    projectMonthsList.forEach((_, i) => {
+      const colLetter = getColLetter(i + 2);
+      const cell = summaryRow.getCell(i + 2);
+      const val = resources.reduce((s, r) => {
+        const key = projectMonthsList[i].toISOString().slice(0, 7);
+        return s + (r.allocations[key] || 0);
+      }, 0);
+
+      if (val > 0) {
+        cell.value = {
+          formula: `SUM(${colLetter}3:${colLetter}${summaryRowIdx - 1})`,
+          result: val
+        };
+        cell.numFmt = '0.00';
+      } else {
+        cell.value = null;
+      }
+      cell.font = { bold: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
     });
 
-    const costRow = worksheet.getRow(rowIdx++);
-    costRow.getCell(1).value = "COSTS";
-    projectMonthsList.forEach((m, i) => {
-      const key = m.toISOString().slice(0, 7);
-      const cost = resources.reduce((s, r) => s + (r.allocations[key] || 0) * r.monthlyCost, 0);
-      costRow.getCell(i + 3).value = cost;
-      costRow.getCell(i + 3).numFmt = `"${displayCurrency}"#,##0`;
-    });
+    const totalColLetter = getColLetter(totalColIdx);
+    const grandTotalCell = summaryRow.getCell(totalColIdx);
+    const grandTotalVal = resources.reduce((total, r) => total + Object.values(r.allocations).reduce((a, b) => a + b, 0), 0);
+    if (grandTotalVal > 0) {
+      grandTotalCell.value = {
+        formula: `SUM(${totalColLetter}3:${totalColLetter}${summaryRowIdx - 1})`,
+        result: grandTotalVal
+      };
+      grandTotalCell.numFmt = '0.00';
+    } else {
+      grandTotalCell.value = null;
+    }
+    grandTotalCell.font = { bold: true };
+    grandTotalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6E0B4' } }; // Light Green
 
-    // Styling
-    worksheet.columns.forEach(col => col.width = 15);
+    // Apply Medium Borders to the outer matrix area
+    for (let r = 1; r <= summaryRowIdx; r++) {
+      for (let c = 1; c <= totalColIdx; c++) {
+        const cell = worksheet.getRow(r).getCell(c);
+        const border: any = { ...cell.border };
+        
+        // Outer matrix borders
+        if (r === 1) border.top = mediumBorder;
+        if (r === summaryRowIdx) border.bottom = mediumBorder;
+        if (c === 1) border.left = mediumBorder;
+        if (c === totalColIdx) border.right = mediumBorder;
+        
+        // Specific dividers
+        // Vertical divider after Resource name
+        if (c === 1) border.right = mediumBorder;
+        if (c === 2) border.left = mediumBorder;
+
+        // Vertical divider before Total column
+        if (c === totalColIdx - 1) border.right = mediumBorder;
+        if (c === totalColIdx) border.left = mediumBorder;
+
+        // Horizontal divider after milestone row
+        if (r === 1) border.bottom = mediumBorder;
+        if (r === 2) border.top = mediumBorder;
+
+        // Horizontal divider before summary row
+        if (r === summaryRowIdx - 1) border.bottom = mediumBorder;
+        if (r === summaryRowIdx) border.top = mediumBorder;
+
+        cell.border = border;
+      }
+    }
+
+    // 5. Costs
+    currentRow += 4;
+    const costsHeaderRow = worksheet.getRow(currentRow++);
+    const costsHeaderCell = costsHeaderRow.getCell(totalColIdx - 1);
+    costsHeaderCell.value = "Costs";
+    costsHeaderCell.font = { bold: true, size: 14 };
+    
+    // Hide rates column
+    worksheet.getColumn(ratesColIdx).hidden = true;
+
+    const selfCostRow = worksheet.getRow(currentRow++);
+    selfCostRow.getCell(totalColIdx - 1).value = "Self cost";
+    selfCostRow.getCell(totalColIdx - 1).font = { italic: true };
+    selfCostRow.getCell(totalColIdx - 1).border = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
+    
+    const selfCostValueCell = selfCostRow.getCell(totalColIdx);
+    const totalMMRange = `${totalColLetter}3:${totalColLetter}${summaryRowIdx - 1}`;
+    const ratesRange = `${getColLetter(ratesColIdx)}3:${getColLetter(ratesColIdx)}${summaryRowIdx - 1}`;
+    selfCostValueCell.value = {
+      formula: `SUMPRODUCT(${totalMMRange},${ratesRange})`,
+      result: resources.reduce((total, r) => total + (Object.values(r.allocations).reduce((a, b) => a + b, 0) * r.monthlyCost), 0)
+    };
+    selfCostValueCell.numFmt = `#,##0`;
+    selfCostValueCell.font = { bold: true };
+    selfCostValueCell.border = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
+
+    const margin = marginStr ? parseFloat(marginStr) : 0;
+    const contingency = contingencyStr ? parseFloat(contingencyStr) : 0;
+    const totalMultiplier = (1 + margin / 100) * (1 + contingency / 100);
+    
+    if (margin > 0 || contingency > 0) {
+      const marginRow = worksheet.getRow(currentRow++);
+      let label = "SC";
+      if (margin > 0) label += ` + ${margin}%`;
+      if (contingency > 0) label += ` (+${contingency}% cont.)`;
+      
+      marginRow.getCell(totalColIdx - 1).value = label;
+      marginRow.getCell(totalColIdx - 1).border = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
+      marginRow.getCell(totalColIdx).value = {
+        formula: `${totalColLetter}${currentRow - 2} * ${totalMultiplier.toFixed(4)}`,
+        result: (selfCostValueCell.result as number) * totalMultiplier
+      };
+      marginRow.getCell(totalColIdx).numFmt = `#,##0`;
+      marginRow.getCell(totalColIdx).font = { bold: true };
+      marginRow.getCell(totalColIdx).border = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
+    }
+
+    const costsStartRow = selfCostRow.number - 1;
+    const costsEndRow = currentRow - 1;
+    for (let r = costsStartRow + 1; r <= costsEndRow; r++) {
+      worksheet.getRow(r).getCell(totalColIdx - 1).border = { ...worksheet.getRow(r).getCell(totalColIdx - 1).border, left: mediumBorder };
+      worksheet.getRow(r).getCell(totalColIdx).border = { ...worksheet.getRow(r).getCell(totalColIdx).border, right: mediumBorder };
+    }
+    for (let c = totalColIdx - 1; c <= totalColIdx; c++) {
+      worksheet.getRow(costsStartRow + 1).getCell(c).border = { ...worksheet.getRow(costsStartRow + 1).getCell(c).border, top: mediumBorder };
+      worksheet.getRow(costsEndRow).getCell(c).border = { ...worksheet.getRow(costsEndRow).getCell(c).border, bottom: mediumBorder };
+    }
+
+    worksheet.getColumn(ratesColIdx).hidden = true;
+    worksheet.columns.forEach(col => { col.width = 10; });
     worksheet.getColumn(1).width = 30;
+    worksheet.getColumn(totalColIdx - 1).width = 20;
+    worksheet.getColumn(totalColIdx).width = 15;
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Project_Architect_Export_${Date.now()}.xlsx`;
+    a.download = `Timeline_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
     a.click();
   };
 
@@ -1749,7 +1970,17 @@ const ToolProjectArchitect: React.FC = () => {
 
             {workloadAlerts.length > 0 && (
               <div className="mb-4 p-3 bg-red-50 border-2 border-red-400 retro-beveled space-y-2">
-                <h4 className="text-sm font-black uppercase text-red-700">Workload Alerts</h4>
+                <div className="flex justify-between items-center bg-red-100 p-2 border border-red-200">
+                  <h4 className="text-sm font-black uppercase text-red-700 flex items-center gap-2">
+                    <span className="text-lg">⚠️</span> Workload Alerts
+                  </h4>
+                  <button 
+                    onClick={dismissAllAlerts}
+                    className="text-[10px] px-3 py-1 win95-bg border-2 border-gray-400 text-gray-800 font-black uppercase hover:bg-gray-100 active:retro-inset shadow-sm"
+                  >
+                    Dismiss All
+                  </button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                   {workloadAlerts.map((alert, i) => (
                     <div key={i} className="bg-white p-2 border border-red-200 flex justify-between items-center gap-2">
@@ -1781,7 +2012,7 @@ const ToolProjectArchitect: React.FC = () => {
               </div>
             )}
 
-            <div className="flex-grow retro-inset bg-white overflow-x-scroll overflow-y-auto border border-gray-400 relative h-[600px] max-h-[calc(100vh-350px)]">
+            <div className="flex-grow retro-inset bg-white overflow-x-auto overflow-y-auto border border-gray-400 relative h-[600px] max-h-[calc(100vh-350px)]">
               <DndContext 
                   sensors={sensors}
                   collisionDetection={closestCenter}
