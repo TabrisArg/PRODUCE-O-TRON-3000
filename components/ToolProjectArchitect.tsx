@@ -1883,12 +1883,42 @@ const ToolProjectArchitect: React.FC = () => {
                         <div className="text-[10px] font-black uppercase opacity-50 mb-1 leading-none">Total Duration</div>
                         <div className="text-2xl font-black">
                           {milestones.reduce((sum, m) => sum + m.duration, 0)} 
-                          <span className="text-xs ml-1 font-bold lowercase">{effortUnit}</span>
+                          <span className="text-xs ml-1 font-bold lowercase">mo</span>
                         </div>
                       </div>
                     </div>
                   );
                 })()}
+
+                {/* Effort Breakdown */}
+                <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
+                  <div className="text-[10px] font-black uppercase opacity-50 mb-2 leading-none">Total Effort by Discipline</div>
+                  <div className="space-y-2 max-h-[180px] overflow-auto pr-2">
+                    {(() => {
+                      const effortByDisc: Record<string, number> = {};
+                      backlog.forEach(item => {
+                        const canon = getCanonicalDisciplineName(item.discipline || '');
+                        effortByDisc[canon] = (effortByDisc[canon] || 0) + item.effort;
+                      });
+
+                      const effortEntries = Object.entries(effortByDisc).map(([name, effort]) => {
+                        const effectiveEffort = effort * (1 + inefficiency / 100);
+                        return { name, effort: effectiveEffort };
+                      }).sort((a,b) => b.effort - a.effort);
+
+                      if (effortEntries.length === 0) return <div className="text-xs italic opacity-50">No backlog loaded.</div>;
+
+                      return effortEntries.map(({ name, effort }) => (
+                        <div key={name} className="flex justify-between items-end border-b border-gray-200 pb-1">
+                          <span className="font-bold text-xs truncate max-w-[140px] uppercase">{name}</span>
+                          <span className="text-xs font-mono bg-green-50 px-1.5 rounded text-green-800">
+                            {effort.toFixed(0)} <span className="text-[10px] opacity-60 italic">{currentUnit.short}</span>
+                          </span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
 
                 {/* Team Peak Breakdown */}
                 <div className="p-3 bg-white/50 border border-gray-300 shadow-sm">
