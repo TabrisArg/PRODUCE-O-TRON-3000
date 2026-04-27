@@ -2036,28 +2036,30 @@ const ToolProjectArchitect: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                   {workloadAlerts.map((alert, i) => (
-                    <div key={i} className="bg-white p-2 border border-red-200 flex justify-between items-center gap-2">
-                      <div className="text-sm">
-                        <span className="font-black text-red-600">[{alert.milestoneName}]</span> {alert.discipline}: 
-                        <span className="ml-1 font-mono">{alert.allocated.toFixed(1)}/{alert.required.toFixed(1)} MM</span>
+                    <div key={i} className="bg-white p-2 border border-red-200 flex justify-between items-center gap-2 shadow-sm">
+                      <div className="text-xs leading-tight">
+                        <div className="font-black text-red-600 uppercase text-[9px] mb-0.5">Allocation Mismatch</div>
+                        <div>
+                          <span className="font-bold">{alert.discipline}</span> in <span className="font-bold">{alert.milestoneName}</span> needs more capacity.
+                          <span className="ml-1 font-mono opacity-60">({alert.allocated.toFixed(1)}/{alert.required.toFixed(1)} MM)</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {alert.isCompensatable ? (
-                          <button 
-                            onClick={() => { pushToUndo(); setDismissedAlerts(prev => ({ ...prev, [`${alert.milestoneId}-${alert.discipline}`]: true })); }}
-                            className="text-[10px] px-2 py-1 win95-bg border border-blue-600 text-blue-700 font-bold uppercase hover:bg-blue-50 flex items-center gap-1"
-                            title="Total project capacity covers this overload"
-                          >
-                            <span className="text-sm">⚖️</span> Compensate
-                          </button>
-                        ) : (
+                      <div className="flex flex-col gap-1 shrink-0">
+                        {!alert.isCompensatable && (
                           <button 
                             onClick={() => spreadWorkload(alert.discipline, alert.milestoneId)}
-                            className="text-[10px] px-2 py-1 bg-red-600 text-white font-black uppercase hover:bg-red-700 rounded shadow-sm"
+                            className="text-[9px] px-1.5 py-0.5 bg-red-600 text-white font-black uppercase hover:bg-red-700 rounded-sm shadow-sm"
+                            title="Automatically add support resources"
                           >
                             Add Support
                           </button>
                         )}
+                        <button 
+                          onClick={() => { pushToUndo(); setDismissedAlerts(prev => ({ ...prev, [`${alert.milestoneId}-${alert.discipline}`]: true })); }}
+                          className="text-[9px] px-1.5 py-0.5 win95-bg border border-gray-400 text-gray-800 font-bold uppercase hover:bg-gray-100 active:retro-inset"
+                        >
+                          Dismiss
+                        </button>
                       </div>
                     </div>
                   ))}
