@@ -20,5 +20,11 @@ export const TOOLS: ToolConfig[] = [
     name: "Project Architect",
     icon: <img src={ICONS.ARQUITECT} alt="calendar" className="w-5 h-5" />,
     description: "Simulate costs, import backlogs, and forecast resource timelines."
+  },
+  {
+    id: ToolType.DISCIPLINE_CALCULATOR,
+    name: "Discipline Calculator",
+    icon: <img src={ICONS.RECALCULATE} alt="calculate" className="w-5 h-5" />,
+    description: "Calculate total effort per discipline with inefficiency overrides."
   }
 ];

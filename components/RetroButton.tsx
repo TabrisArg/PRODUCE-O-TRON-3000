@@ -2,6 +2,7 @@
 import React from 'react';
 
 interface RetroButtonProps {
+  id?: string;
   children: React.ReactNode;
   onClick?: () => void;
   className?: string;
@@ -10,9 +11,10 @@ interface RetroButtonProps {
   title?: string;
 }
 
-const RetroButton: React.FC<RetroButtonProps> = ({ children, onClick, className = "", active = false, disabled = false, title }) => {
+const RetroButton: React.FC<RetroButtonProps> = ({ id, children, onClick, className = "", active = false, disabled = false, title }) => {
   return (
     <button
+      id={id}
       onClick={!disabled ? onClick : undefined}
       disabled={disabled}
       title={title}

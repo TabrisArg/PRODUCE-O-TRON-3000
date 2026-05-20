@@ -755,15 +755,15 @@ const ToolProjectArchitect: React.FC = () => {
       // 2. Parse Rows
       const newBacklog: BacklogItem[] = [];
       const extractedPhases: { id: string, name: string, duration: number }[] = [];
-      let currentMilestoneId = "ms-0"; // Default to first milestone
+      let currentMilestoneId = ""; 
       let lastSection = "";
 
       worksheet.eachRow((row, rowNum) => {
         if (rowNum <= headerRowIdx) return;
 
-        const section = getCellValue(row.getCell(colMap.section));
-        const task = getCellValue(row.getCell(colMap.task));
-        const discipline = getCellValue(row.getCell(colMap.discipline));
+        const col1Val = getCellValue(row.getCell(colMap.section));
+        const col2Val = getCellValue(row.getCell(colMap.task));
+        const col3Val = getCellValue(row.getCell(colMap.discipline));
         
         let effort = 0;
         const effortCell = row.getCell(colMap.effort);
@@ -773,44 +773,48 @@ const ToolProjectArchitect: React.FC = () => {
           effort = parseFloat(getCellValue(effortCell).replace(/[^\d.]/g, '')) || 0;
         }
 
-        let duration = 0;
-        const durationCell = row.getCell(colMap.duration);
-        if (durationCell) {
-          if (typeof durationCell.value === 'number') {
-            duration = Math.ceil(durationCell.value);
-          } else {
-            duration = Math.ceil(parseFloat(getCellValue(durationCell).replace(/[^\d.]/g, ''))) || 0;
-          }
-        }
+        // Identify stage/milestone header row: Col 1 is populated, but Discipline and Estimate are empty/zero.
+        const isStageHeader = col1Val && !col3Val && effort === 0;
 
-        const isMilestoneHeader = (duration > 0) || (section && !task && !discipline && effort === 0);
-
-        if (isMilestoneHeader && section && section !== lastSection) {
-          lastSection = section;
-          let finalDuration = duration;
-          if (finalDuration === 0) {
-            const match = section.match(/(\d+)\s*(month|week)s?/i);
-            finalDuration = match ? parseInt(match[1]) : 1;
-          }
-          
-          const msName = section.replace(/[- ]?\d+\s*(month|week)s?/i, '').trim();
+        if (isStageHeader) {
+          lastSection = col1Val;
           currentMilestoneId = `ms-${extractedPhases.length}`;
           
+          let duration = 2;
+          const lowerName = col1Val.toLowerCase();
+          if (lowerName.includes('preprod')) duration = 2;
+          else if (lowerName.includes('main')) duration = 8;
+          else if (lowerName.includes('polish')) duration = 2;
+          else if (lowerName.includes('cert')) duration = 1;
+          else if (lowerName.includes('post')) duration = 1;
+
           extractedPhases.push({
             id: currentMilestoneId,
-            name: msName,
-            duration: finalDuration
+            name: col1Val,
+            duration: duration
           });
           return;
         }
 
-        const taskName = task || (effort > 0 ? section : "");
+        // Regular task row: Column 1 holds the actual task title. If empty, fallback to Column 2.
+        const taskName = col1Val || col2Val;
+
         if (taskName && effort > 0 && !taskName.toLowerCase().includes('total')) {
+          if (!currentMilestoneId) {
+            currentMilestoneId = "ms-0";
+            lastSection = "Preprod";
+            extractedPhases.push({
+              id: currentMilestoneId,
+              name: "Preprod",
+              duration: 2
+            });
+          }
+
           newBacklog.push({ 
             milestoneId: currentMilestoneId,
-            section: section || lastSection, 
+            section: lastSection || "Preprod", 
             task: taskName, 
-            discipline, 
+            discipline: col3Val || "Unknown / Unassigned", 
             effort 
           });
         }
@@ -1254,11 +1258,10 @@ const ToolProjectArchitect: React.FC = () => {
 
     // Define columns
     worksheet.columns = [
-      { header: 'Milestone', key: 'milestone', width: 25 },
-      { header: 'Work Package', key: 'task', width: 40 },
+      { header: 'Milestone', key: 'milestone', width: 35 },
+      { header: 'Work Package', key: 'task', width: 45 },
       { header: 'Discipline', key: 'discipline', width: 25 },
       { header: 'Estimate', key: 'estimate', width: 15 },
-      { header: 'Milestone duration (months)', key: 'duration', width: 25 },
     ];
 
     // Style header row
@@ -1268,33 +1271,34 @@ const ToolProjectArchitect: React.FC = () => {
 
     // Sample Data
     const data = [
-      { milestone: 'prepropd', duration: 2 },
-      { milestone: 'prepropd', task: 'Project Setup', discipline: 'Engine Programmer', estimate: 3 },
-      { milestone: 'prepropd', task: 'Build pipelines', discipline: 'Engine Programmer', estimate: 2 },
-      { milestone: 'prepropd', task: 'Hardware Setup', discipline: 'Engine Programmer', estimate: 2 },
-      { milestone: 'prepropd', task: 'Access to developer portals', discipline: 'Producer', estimate: 1 },
-      { milestone: '', task: '', discipline: '', estimate: '' }, // Empty row
-      { milestone: 'main prod', duration: 6 },
-      { milestone: 'main prod', task: 'Save files', discipline: 'Engine Programmer', estimate: 5 },
-      { milestone: 'main prod', task: 'Mod support', discipline: 'Engine Programmer', estimate: 5 },
-      { milestone: 'main prod', task: 'NVN Renderer implementation', discipline: 'Rendering Programmer', estimate: 55 },
-      { milestone: 'main prod', task: 'Shader changes / optimizations', discipline: 'Rendering Programmer', estimate: 13 },
-      { milestone: '', task: '', discipline: '', estimate: '' },
-      { milestone: 'polish', duration: 3 },
-      { milestone: 'polish', task: 'Bug fixing', discipline: 'Engine Programmer', estimate: 55 },
-      { milestone: 'polish', task: 'Localization', discipline: 'QA Tester', estimate: 5 },
-      { milestone: '', task: '', discipline: '', estimate: '' },
-      { milestone: 'cert', duration: 3 },
-      { milestone: 'cert', task: 'Bug fixing', discipline: 'Engine Programmer', estimate: 55 },
-      { milestone: '', task: '', discipline: '', estimate: '' },
-      { milestone: 'post', duration: 1 },
-      { milestone: 'post', task: 'Bug fixing', discipline: 'Engine Programmer', estimate: 21 },
-      { milestone: 'post', task: 'Documentation', discipline: 'Engine Programmer', estimate: 5 },
+      { milestone: 'Preprod' },
+      { milestone: 'Art direction / PBR style targets', task: 'Reference board: what does SR2 look like in PBR? Stylized vs realistic.', discipline: 'Technical Art', estimate: 0.25 },
+      { milestone: '.cmeshx format documentation (XML)', task: 'Format spec + sample parser', discipline: 'Technical Art', estimate: 0.07 },
+      { milestone: '.morphx format documentation (XML)', task: 'Format spec + sample parser', discipline: 'Technical Art', estimate: 0.05 },
+      { milestone: '.carx format documentation', task: 'Complete format spec', discipline: 'Technical Art', estimate: 0.02 },
+      { milestone: 'Get original project compiled', task: 'Original engine preparation', discipline: 'Programming', estimate: 1.0 },
+      { milestone: 'Remove old rendering pipeline', task: 'Original engine preparation', discipline: 'Programming', estimate: 0.5 },
+      
+      { milestone: 'Main Prod' },
+      { milestone: 'UE5 master material - opaque world surfaces', task: 'Parameterized master material for world geometry', discipline: 'Technical Art', estimate: 1.0 },
+      { milestone: 'UE5 master material - characters (skin / cloth / hair)', task: 'Character material with subsurface scattering', discipline: 'Technical Art', estimate: 1.0 },
+      { milestone: 'Stilwater exterior lighting — downtown / commercial', task: 'Lit exterior: day / night / weather', discipline: 'Lighting Art', estimate: 4.0 },
+      { milestone: 'Combat VFX — muzzle flash (all weapon types)', task: 'Niagara muzzle flash systems', discipline: 'VFX Art', estimate: 2.0 },
+      { milestone: 'UE UI Rebuild', task: 'Rebuild UI from scratch', discipline: 'Programming', estimate: 12.0 },
+
+      { milestone: 'Polish' },
+      { milestone: 'Kazuo through Aisha - face remodels (7)', task: '7 face meshes + PBR textures', discipline: 'Character Art', estimate: 4.0 },
+      { milestone: 'T1 weapons (7) — high-poly remodel', task: '7 remodeled weapons + PBR textures', discipline: 'Hard Surface Art', estimate: 6.0 },
+
+      { milestone: 'Cert' },
+      
+      { milestone: 'Post' }
     ];
 
     data.forEach(item => {
       const row = worksheet.addRow(item);
-      if (item.duration) {
+      const isHeader = item.milestone && !item.discipline && !item.estimate;
+      if (isHeader) {
         row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
         row.font = { bold: true };
       }
