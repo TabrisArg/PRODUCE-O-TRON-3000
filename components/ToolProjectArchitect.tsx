@@ -467,6 +467,16 @@ const ToolProjectArchitect: React.FC = () => {
     return discInfo ? discInfo.name : name;
   }, []);
 
+  const ensureProductionOnTop = useCallback((list: Resource[]): Resource[] => {
+    const index = list.findIndex(r => getCanonicalDisciplineName(r.name) === 'Production');
+    if (index > 0) {
+      const prodResource = list[index];
+      const rest = list.filter((_, idx) => idx !== index);
+      return [prodResource, ...rest];
+    }
+    return list;
+  }, [getCanonicalDisciplineName]);
+
   const getWorkloadStatus = useCallback((milestoneId: string, disciplineName: string) => {
     const canonicalName = getCanonicalDisciplineName(disciplineName);
     
@@ -781,12 +791,31 @@ const ToolProjectArchitect: React.FC = () => {
           currentMilestoneId = `ms-${extractedPhases.length}`;
           
           let duration = 2;
-          const lowerName = col1Val.toLowerCase();
-          if (lowerName.includes('preprod')) duration = 2;
-          else if (lowerName.includes('main')) duration = 8;
-          else if (lowerName.includes('polish')) duration = 2;
-          else if (lowerName.includes('cert')) duration = 1;
-          else if (lowerName.includes('post')) duration = 1;
+          let durationParsed = false;
+          if (colMap.duration !== -1) {
+            const cell = row.getCell(colMap.duration);
+            if (cell && cell.value !== null && cell.value !== undefined) {
+              let val = 0;
+              if (typeof cell.value === 'number') {
+                val = cell.value;
+              } else {
+                val = parseFloat(getCellValue(cell).replace(/[^\d.]/g, '')) || 0;
+              }
+              if (val > 0) {
+                duration = val;
+                durationParsed = true;
+              }
+            }
+          }
+
+          if (!durationParsed) {
+            const lowerName = col1Val.toLowerCase();
+            if (lowerName.includes('preprod')) duration = 2;
+            else if (lowerName.includes('main')) duration = 8;
+            else if (lowerName.includes('polish')) duration = 2;
+            else if (lowerName.includes('cert')) duration = 1;
+            else if (lowerName.includes('post')) duration = 1;
+          }
 
           extractedPhases.push({
             id: currentMilestoneId,
@@ -904,7 +933,7 @@ const ToolProjectArchitect: React.FC = () => {
         }
       });
       
-      return newList;
+      return ensureProductionOnTop(newList);
     });
     
     setIsRedistributeOpen(false);
@@ -971,7 +1000,7 @@ const ToolProjectArchitect: React.FC = () => {
 
     setResources(prev => {
       // 1. If prev is empty, this is the first import. Use backlog order.
-      if (prev.length === 0) return newResources;
+      if (prev.length === 0) return ensureProductionOnTop(newResources);
 
       // 2. Create map of calculated resources by their canonical name for easier matching
       const newResourcesByCanonical = new Map(
@@ -1014,9 +1043,9 @@ const ToolProjectArchitect: React.FC = () => {
         return !handledCanonicalNames.has(canonical);
       });
       
-      return [...filteredPrev, ...brandNew];
+      return ensureProductionOnTop([...filteredPrev, ...brandNew]);
     });
-  }, [backlog, milestones, selfCost, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName]);
+  }, [backlog, milestones, selfCost, currentUnit, inefficiency, projectMonthsList, getCanonicalDisciplineName, ensureProductionOnTop]);
 
   useEffect(() => {
     if (isAutoSync && backlog.length > 0) {
@@ -1149,12 +1178,15 @@ const ToolProjectArchitect: React.FC = () => {
       allocations[m.toISOString().slice(0, 7)] = 0;
     });
     
-    setResources(prev => [{
-      id: newId,
-      name: "New Role",
-      monthlyCost: selfCost || 1000,
-      allocations
-    }, ...prev]);
+    setResources(prev => {
+      const newList = [{
+        id: newId,
+        name: "New Role",
+        monthlyCost: selfCost || 1000,
+        allocations
+      }, ...prev];
+      return ensureProductionOnTop(newList);
+    });
     setNewlyCreatedId(newId);
   };
 
